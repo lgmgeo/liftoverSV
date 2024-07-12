@@ -1,0 +1,2 @@
+/home/vgeoffroy/working_directory/liftoverSV/bin/liftoverSV -I ./input_hg19.vcf -O ./output_hg38.vcf -C hg19ToHg38.chr22.over.chain
+

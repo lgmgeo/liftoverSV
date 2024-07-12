@@ -1,0 +1,172 @@
+#!/usr/bin/env tclsh
+
+############################################################################################################
+# liftoverSV 1.0.0_beta                                                                                    #
+#                                                                                                          #
+# Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
+#                                                                                                          #
+# This program is free software; you can redistribute it and/or                                            #
+# modify it under the terms of the GNU General Public License                                              #
+# as published by the Free Software Foundation; either version 3                                           #
+# of the License, or (at your option) any later version.                                                   #
+#                                                                                                          #
+# This program is distributed in the hope that it will be useful,                                          #
+# but WITHOUT ANY WARRANTY; without even the implied warranty of                                           #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                                             #
+# GNU General Public License for more details.                                                             #
+#                                                                                                          #
+# You should have received a copy of the GNU General Public License                                        #
+# along with this program; If not, see <http://www.gnu.org/licenses/>.                                     #
+############################################################################################################
+
+# TO BE IMPROVED
+################
+#
+# WARNING 1:
+# Script to use with symbolic SVs (e.g. <DEL>) (not square-bracketed ALT, because genomic coordinates and sequences are not lifted)
+#
+# WARNING 2:
+# Pay attention to the genomic coordinates indicated in the VCF “INFO” field:
+# => Only END, SVEND, SVLEN, SVSIZE are lifted
+# => The other genomic coordinates are not modified:
+#    - Square-bracketed ALT values (e.g. ATTGC]17:1563254]) are not lifted
+#    - INFO/CIPOS and INFO/CIEND are not checked. We should have:
+#       => POS-CIPOS > 0
+#       => END+CIEND < chrom_length
+#    - INFO/MEINFO and INFO/METRANS are not lifted
+#    - INFO/HOMLEN and INFO/HOMSEQ are not lifted
+
+global g_liftoverSV
+
+
+
+# Setting of FHS directories variables:
+# - g_liftoverSV(installDir)
+# - g_liftoverSV(etcDir)
+# - g_liftoverSV(docDir)
+# - g_liftoverSV(tclDir) 
+# - g_liftoverSV(bashDir)
+######################################
+proc getScriptDirectory {} {
+    set scriptFilePath [file normalize [info script]]
+    set scriptDir [file dirname $scriptFilePath]
+    return $scriptDir
+}
+
+set g_liftoverSV(installDir) [getScriptDirectory]
+regsub "/bin$" $g_liftoverSV(installDir)  "" g_liftoverSV(installDir) 
+set g_liftoverSV(etcDir)     "$g_liftoverSV(installDir)/etc/liftoverSV"
+set g_liftoverSV(docDir)     "$g_liftoverSV(installDir)/share/doc/liftoverSV"
+set tclVersion [info tclversion]
+set g_liftoverSV(tclDir)     "$g_liftoverSV(installDir)/share/tcl${tclVersion}/liftoverSV"
+if {![file exists $g_liftoverSV(tclDir)]} {
+    set g_liftoverSV(tclDir) "$g_liftoverSV(installDir)/share/tcl/liftoverSV"
+}
+set g_liftoverSV(bashDir)    "$g_liftoverSV(installDir)/share/bash/liftoverSV"
+
+
+
+# Sources
+#########
+source $g_liftoverSV(tclDir)/liftoverSV-config.tcl
+source $g_liftoverSV(tclDir)/liftoverSV-extractDNAseq.tcl
+source $g_liftoverSV(tclDir)/liftoverSV-general.tcl
+source $g_liftoverSV(tclDir)/liftoverSV-help.tcl
+source $g_liftoverSV(tclDir)/liftoverSV-liftAndWrite.tcl 
+
+
+
+# Search for the liftoverSV VERSION
+###################################
+if {![info exists g_liftoverSV(Version)]} {
+    set runFile "$g_liftoverSV(installDir)/bin/liftoverSV"
+    foreach L [LinesFromFile $runFile] {
+        if {[regexp "^# liftoverSV (\[0-9\]+.\[0-9\]+(.\[0-9\]+)?(_beta)?)" $L match version]} {
+            set g_liftoverSV(Version) "$version"
+            break
+        }
+    }
+}
+if {![info exists g_liftoverSV(Version)]} {
+    set g_liftoverSV(Version) "X.X"
+}
+
+puts "\nliftoverSV $g_liftoverSV(Version)\n"
+
+if {[regexp "\-version|\-Version" $argv]} {
+    exit
+}
+
+
+
+# DISPLAY
+#########
+puts ""
+puts "Copyright (C) 2024-current GEOFFROY Veronique"
+puts ""
+puts "Please feel free to create a Github issue for any suggestions or bug reports (https://github.com/lgmgeo/liftoverSV/issues)"
+puts ""
+puts "Tcl/Tk version: $tclVersion"
+puts ""
+puts "Application name used:"
+puts "$g_liftoverSV(installDir)\n\n"
+
+
+
+## Downloading configuration
+############################
+configureLiftoverSV $argv
+
+
+
+# Arguments display
+###################
+puts ""
+puts "...listing arguments"
+puts "\t*********************************************"
+puts "\tliftoverSV has been run with these arguments:"
+puts "\t*********************************************"
+
+set lKey [array names g_liftoverSV]
+foreach key [lsort $lKey] {
+    if {[regexp "bashDir|docDir|etcDir|installDir|tclDir|Version" $key]} {continue}
+    if {$g_liftoverSV($key) eq ""} {continue}
+    puts "\t--$key $g_liftoverSV($key)"
+}
+puts "\t*********************************************"
+
+
+
+#set seq [ExtractDNAseq 1 999888 999999 /PROGS/EXTERN/AnnotSV/AnnotSV_latest/share/AnnotSV/Annotations_Human/BreakpointsAnnotations/GCcontent/GRCh38/GRCh38_chromFa.fasta]
+#puts $seq
+
+
+# Extract the different genomic coordinates from the input VCF 
+##############################################################
+set tmpBEDfile [extractAllTheGenomicCoordinates]
+
+
+
+# Liftover these different genomic coordinates
+##############################################
+set tmpBEDfileLifted [liftoverGenomicCoordinates $tmpBEDfile]
+
+
+
+# Memorize the lifted coordinates
+#################################
+memorizeGenomicCoordinates $tmpBEDfile $tmpBEDfileLifted
+
+
+
+# Write the lifted VCF
+######################
+writeTheLiftedVCF
+
+
+
+# Finished
+##########
+puts "\n...liftoverSV is done with the analysis ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
+
+

@@ -1,0 +1,29 @@
+############################################################################################################
+# liftoverSV 1.0.0_beta                                                                                    #
+#                                                                                                          #
+# Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
+#                                                                                                          #
+############################################################################################################
+
+
+For more details, please see the README file.
+
+
+July, 12, 2024, liftoverSV version 1.0.0_beta
+
+	liftoverSV: Lifts over a Structural Variation VCF file from one reference build to another.
+
+	Purpose:
+	- Lift over #CHROM and POS
+
+	- Lift over INFO/END and INFO/SVEND
+	=> drop the SV if:
+	Case1: one position (start or end) is lifted while the other doesn't
+	Case2: one position (start or end) goes to a different chrom from the other
+	Case3: "lifted start" > "lifted end"
+	Case4: the distance between the two lifted positions changes significantly (difference between both SVLENs > 5%)
+
+	- Lift over INFO/SVLEN, INFO/SVSIZE
+ 
+
+
