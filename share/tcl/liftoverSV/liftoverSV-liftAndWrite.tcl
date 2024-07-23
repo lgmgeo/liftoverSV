@@ -161,9 +161,9 @@ proc writeTheLiftedVCF {} {
     file delete -force $unmappedFile
 
 	set L_toWrite {}
-	set i 1
+	set i 0
 	set L_unmappedToWrite {}
-	set j 1
+	set j 0
 
 	set case1 0
     set case2 0
@@ -317,7 +317,8 @@ proc writeTheLiftedVCF {} {
 	close $F
 	WriteTextInFile [join $L_toWrite "\n"] $g_liftoverSV(OUTPUTFILE)
     WriteTextInFile [join $L_unmappedToWrite "\n"] $unmappedFile
-	
+	puts "\t- $i mapped SV"
+
 	puts "\n...unmapped SV (see [file tail $unmappedFile] for details):"
 	puts "\t- $case1 SV with one position (start or end) lifted while the other doesn't"
 	puts "\t- $case2 SV with one position (start or end) mapped to a different chrom from the other"
