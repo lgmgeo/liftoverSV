@@ -57,7 +57,7 @@ Please cite the following doi if you are using this tool in your research:</br>
    - Case3: "lifted start" > "lifted end"
    - Case4: the distance between the two lifted positions changes significantly (difference between both SVLENs > 5%)
 
-* Lift over INFO/SVLEN, INFO/SVSIZE
+* Lift over INFO/SVLEN, INFO/SVSIZE (for deletion, duplication, insertion and inversion)
 
 * The structured contig field includes all the ID attributes (do not include additional optional attributes)</br>
 e.g. `##contig=<ID=chr22>`

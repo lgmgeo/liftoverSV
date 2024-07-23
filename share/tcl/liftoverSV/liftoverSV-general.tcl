@@ -60,4 +60,25 @@ proc isAnEmptyFile {VCFfile} {
     if {$test} {return 0} else {return 1}
 }
 
+proc normalizeSVtype {SVtype} {
+
+    # SVtype in which category: DUP? DEL? INV? INS? TRA? None?
+    if {[regexp -nocase "del|loss|<CN0>|<CN1>" $SVtype]} {
+        set SVtype "DEL"
+    } elseif {[regexp -nocase "dup|gain|MCNV" $SVtype ]} {
+        set SVtype "DUP"
+    } elseif {[regexp -nocase "<CN(\[0-9\]+)>" $SVtype match i]} {
+        if {$i>1} {set SVtype "DUP"}
+    } elseif {[regexp -nocase "inv" $SVtype]} {
+        set SVtype "INV"
+    } elseif {[regexp -nocase "ins|MEI|alu|line|sva" $SVtype]} { ;# "DEL_ALU" is set to "DEL", OK!
+        set SVtype "INS"
+    } elseif {[regexp -nocase "TRA|TRN" $SVtype ]} {
+        set SVtype "TRA"
+    } else {
+        set SVtype "None"
+    }
+
+    return $SVtype
+}
 

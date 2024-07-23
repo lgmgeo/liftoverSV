@@ -25,7 +25,8 @@ For more details, please see the README file.
 	  => The structured contig field includes all the ID attributes (do not include additional optional attributes)
 	     e.g. `##contig=<ID=chr22>`
 	- Add a DOI in README.md
-
+	- Lift over INFO/SVLEN, INFO/SVSIZE only for deletion, duplication, insertion and inversion
+	  => For other SV types (e.g. translocation, complex SV, etc..), the SVLEN is set to . in the output file when present in the input file
 
 July, 23, 2024, liftoverSV version 0.1.1_beta
 	- Add the --PERCENT,P option

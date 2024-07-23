@@ -160,6 +160,9 @@ proc writeTheLiftedVCF {} {
 	file delete -force $g_liftoverSV(OUTPUTFILE)
     file delete -force $unmappedFile
 
+	# SVLEN calculation only for the following svtypes (not TRA, CPX...)
+	set L_svtypes {DUP DEL INV INS}
+
 	set L_toWrite {}
 	set i 0
 	set L_unmappedToWrite {}
@@ -202,6 +205,8 @@ proc writeTheLiftedVCF {} {
 
 	    set chrom [lindex $Ls 0]
 		set start [lindex $Ls 1]
+
+		set alt [lindex $Ls 4]
 		set infos [lindex $Ls 7]
 
 		set theID $g_ID($chrom,$start)
@@ -217,7 +222,27 @@ proc writeTheLiftedVCF {} {
 		}
 		set theNewL "$theNewChrom\t$theNewStart\t[join [lrange $Ls 2 6] "\t"]"
 
-	    if {[regexp "(^END|;END)=(\[^;\]+)(;|$)" $infos match tutu end titi]} {
+
+        # Source: 
+		#########
+		# https://samtools.github.io/hts-specs/VCFv4.4.pdf
+
+		# END:
+		######
+		# The END of each allele is defined as:
+		#   - Non-symbolic alleles: POS + length of REF allele − 1.
+		#   - <INS> symbolic structural variant alleles: POS + length of REF allele − 1.
+		#   - <DEL>, <DUP>, <INV>, and <CNV> symbolic structural variant alleles: POS + SVLEN.
+		# <*> symbolic allele: the last reference call position.
+		# END must be present for all records containing the <*> symbolic allele
+	
+		# SVLEN:
+		########
+		# SVLEN is defined for INS, DUP, INV , and DEL symbolic alleles as the number of the inserted, duplicated, inverted, and deleted bases respectively. 
+		# SVLEN is defined for CNV symbolic alleles as the length of the segment over which the copy number variant is defined. 
+		# The missing value . should be used for all other ALT alleles, including ALT alleles using breakend notation.
+
+	    if {[regexp "(^END|;END|^SVEND|;SVEND)=(\[^;\]+)(;|$)" $infos match tutu end titi]} {
 			set theID $g_ID($chrom,$end)
 			if {[info exists g_liftedCoord($theID)]} {
 	            set theNewChromEND [lindex [split $g_liftedCoord($theID) ","] 0]
@@ -255,43 +280,8 @@ proc writeTheLiftedVCF {} {
 			}
 	    }
 
-	    if {[regexp "(^SVEND|;SVEND)=(\[^;\]+)(;|$)" $infos match tutu svend titi]} {
-	        set theID $g_ID($chrom,$svend)
-	        if {[info exists g_liftedCoord($theID)]} {
-	            set theNewChromSVEND [lindex [split $g_liftedCoord($theID) ","] 0]
-	            set theNewSVEND [lindex [split $g_liftedCoord($theID) ","] 1]
-	            if {$theNewChrom ne $theNewChromSVEND} {
-                    # Case2
-                    lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tstart and SVEND are located on different chrom ($theNewChrom # $theNewChromSVEND)"
-                    incr j
-                    incr case2
-					continue
-                }
-				if {$theNewSVEND < $theNewStart} {
-                    # Case3
-                    lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tlifted_start ($theNewStart) > lifted_svend ($theNewSVEND)"
-                    incr j
-                    incr case3
-					continue
-                }
-	            regsub "(^SVEND|;SVEND)=(\[^;\]+)(;|$)" $infos "\\1=$theNewSVEND\\3" infos
-                set svlen [expr {$svend-$start}]
-				set svlenlifted [expr {$theNewSVEND-$theNewStart}]
-                if {$svlenlifted < [expr {$svlen*(1-$g_liftoverSV(PERCENT))}] || $svlenlifted > [expr {$svlen*(1+$g_liftoverSV(PERCENT))}]} {
-                    # Case4
-                    lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tthe distance between the two lifted positions changes significantly (svlen diff > 5%; $svlen # $svlenlifted)"
-                    incr j
-                    incr case4
-					continue
-                }
-            } else {
-                # Case1
-                lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tSVEND ($chrom,$svend) not lifted"
-                incr j
-                incr case1
-				continue
-            }
-	    }
+		set svtype [normalizeSVtype $alt]
+		if {[lsearch -exact $L_svtypes $svtype] eq -1 && [info exists svlenlifted]} {set svlenlifted "."}
 	
 	    if {[info exists svlenlifted]} {
 			regsub "(^SVLEN|;SVLEN)=(-)?(\[0-9\]+)(;|$)" $infos "\\1=\\2$svlenlifted\\4" infos
