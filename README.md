@@ -15,6 +15,10 @@
 
 ## OPTIONS
 ```bash
+--BCFTOOLS,-F <File>          The bcftools path
+                              See https://samtools.github.io/bcftools/howtos/install.html
+                              Default: "bcftools"
+
 --BEDTOOLS,-B <File>          The bedtools path
                               See https://bedtools.readthedocs.io/en/latest/content/installation.html
                               Default: "bedtools"
@@ -46,7 +50,7 @@
 Please cite the following doi if you are using this tool in your research:</br>
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12799803.svg)](https://doi.org/10.5281/zenodo.12799803)
 
-## liftoverSV: version 0.1.1_beta
+## liftoverSV: 
 
 * Lift over #CHROM and POS
 
@@ -66,8 +70,10 @@ e.g. `##contig=<ID=chr22>`
 ### a) The UCSC Liftover tool (required)
 The UCSC Liftover tool needs to be locally installed.</br>
 https://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/liftOver
-### b) bedtools (to be required in future development)
-The “bedtools” toolset (developed by Quinlan AR) will need to be locally installed to lift over sequences (e.g. ACGGTTG]chr1:12569863])
+### b) bcftools
+The “bcftools” toolset needs to be locally installed to sort the VCF output file
+### c) bedtools (to be required in future development)
+The “bedtools” toolset will need to be locally installed to lift over sequences (e.g. ACGGTTG]chr1:12569863])
 
 ## SV VCF format: Documentation
 cf https://samtools.github.io/hts-specs/VCFv4.4.pdf</br>

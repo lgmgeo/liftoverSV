@@ -6,6 +6,10 @@ COMMAND LINE USAGE
 
 OPTIONS
 
+--BCFTOOLS,-F <File>          The bcftools path
+                              See https://samtools.github.io/bcftools/howtos/install.html
+                              Default: "bcftools"
+
 --BEDTOOLS,-B <File>          The bedtools path 
                               See https://bedtools.readthedocs.io/en/latest/content/installation.html
                               Default: "bedtools"

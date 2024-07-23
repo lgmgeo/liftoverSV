@@ -1,5 +1,5 @@
 ############################################################################################################
-# liftoverSV 0.1.1_beta                                                                                    #
+# liftoverSV 0.1.2_beta                                                                                    #
 #                                                                                                          #
 # Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
@@ -318,5 +318,27 @@ proc writeTheLiftedVCF {} {
 	
 }
 
+
+proc sortTheLiftedVCF {} {
+
+    global g_liftoverSV
+
+	# Try to sort the output file
+	regsub ".vcf$" $g_liftoverSV(OUTPUTFILE) ".sort.vcf.gz" sortedOUTPUTFILE
+
+	if {[catch {eval exec $g_liftoverSV(BCFTOOLS) sort $g_liftoverSV(OUTPUTFILE) -o $sortedOUTPUTFILE -Oz} Message]} {
+		if {![regexp "Done$" $Message]} {
+			puts "\n\nPlease sort and compress the output file, run :"
+			puts "bcftools sort $g_liftoverSV(OUTPUTFILE) -o $sortedOUTPUTFILE -Oz"
+			puts $Message
+		} else {
+			puts "\n...sort and compress [file tail $g_liftoverSV(OUTPUTFILE)] ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
+			puts "\tcreation of [file tail $sortedOUTPUTFILE]"
+			if {[file exists $sortedOUTPUTFILE]} {
+				file delete -force $g_liftoverSV(OUTPUTFILE)
+			}
+		}
+	}
+}
 
 

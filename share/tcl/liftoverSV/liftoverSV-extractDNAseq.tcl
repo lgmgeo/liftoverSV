@@ -1,5 +1,5 @@
 ############################################################################################################
-# liftoverSV 0.1.1_beta                                                                                    #
+# liftoverSV 0.1.2_beta                                                                                    #
 #                                                                                                          #
 # Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #

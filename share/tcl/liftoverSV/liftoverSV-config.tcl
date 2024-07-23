@@ -1,5 +1,5 @@
 ############################################################################################################
-# liftoverSV 0.1.1_beta                                                                                    #
+# liftoverSV 0.1.2_beta                                                                                    #
 #                                                                                                          #
 # Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
@@ -28,6 +28,7 @@ proc configureLiftoverSV {argv} {
     ## Load default options
     #######################
     set g_liftoverSV(BEDTOOLS)      "bedtools"
+	set g_liftoverSV(BCFTOOLS)		"bcftools"
 	set g_liftoverSV(LIFTOVER)      "liftOver"   
     set g_liftoverSV(PERCENT)       "0.05"
 
@@ -35,7 +36,7 @@ proc configureLiftoverSV {argv} {
     ##################################
     ## Load options given in arguments
     ##################################
-    set lOptionsOk "B BEDTOOLS C CHAIN h help I INPUTFILE L LIFTOVER O OUTPUTFILE P PERCENT R REFFASTASEQ"
+    set lOptionsOk "B BEDTOOLS C CHAIN F BCFTOOLS h help I INPUTFILE L LIFTOVER O OUTPUTFILE P PERCENT R REFFASTASEQ"
 
     set i 0
     set j 1
@@ -49,6 +50,8 @@ proc configureLiftoverSV {argv} {
 				set optionName BEDTOOLS
 			} elseif {$optionName eq "C"} {
                 set optionName CHAIN
+            } elseif {$optionName eq "F"} {
+                set optionName BCFTOOLS
             } elseif {$optionName eq "I"} {
                 set optionName INPUTFILE
             } elseif {$optionName eq "L"} {
@@ -159,6 +162,7 @@ proc configureLiftoverSV {argv} {
         puts "LiftoverSV needs in argument the path of your OUTPUTFILE file (--OUTPUTFILE ...) - Exit with error."
         exit 2
     }
+	regsub ".gz" $g_liftoverSV(OUTPUTFILE) "" g_liftoverSV(OUTPUTFILE)
     if {![regexp -nocase "(\\.vcf)$" $g_liftoverSV(OUTPUTFILE)]} {
         puts "############################################################################"
         puts "Bad option value: --OUTPUTFILE = $g_liftoverSV(OUTPUTFILE)"
@@ -167,9 +171,9 @@ proc configureLiftoverSV {argv} {
         exit 2
     }
 
-    # BEDTOOLS, LIFTOVER: It should be a good path that we can run
-    foreach tool {BEDTOOLS LIFTOVER} {
-        if {[catch {eval exec $g_liftoverSV($tool)} Message] && ![regexp "usage:" $Message]} {
+    # BEDTOOLS, BCFTOOLS, LIFTOVER: It should be a good path that we can run
+    foreach tool {BEDTOOLS BCFTOOLS LIFTOVER} {
+        if {[catch {eval exec $g_liftoverSV($tool)} Message] && ![regexp -nocase "usage:" $Message]} {
             puts "############################################################################"
             puts "Bad value for the $tool option ($g_liftoverSV($tool))"
             puts "$Message"

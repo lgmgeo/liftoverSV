@@ -1,5 +1,5 @@
 ############################################################################################################
-# liftoverSV 0.1.1_beta                                                                                    #
+# liftoverSV 0.1.2_beta                                                                                    #
 #                                                                                                          #
 # Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
@@ -20,6 +20,8 @@
 
 For more details, please see the README file.
 
+July, 23, 2024, liftoverSV version 0.1.2_beta
+	- Sort and compress the VCF output file with bcftools
 	- Display the number of mapped SV in the output
 	- Update the contig field in the VCF header output:
 	  => The structured contig field includes all the ID attributes (do not include additional optional attributes)
