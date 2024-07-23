@@ -82,3 +82,44 @@ proc normalizeSVtype {SVtype} {
     return $SVtype
 }
 
+# Check for a VCF file (.vcf or .vcf.gz) or for a chain file
+############################################################
+# => Return "with" for a file with a "chr" prefix
+# => Return "without" for a file without a "chr" prefix
+proc fileWithChr {fileToCheck} {
+
+	if {[regexp -nocase "vcf.gz$" $fileToCheck]} {
+		set f [open "| gzip -cd $fileToCheck"]
+		set type "vcf"
+    } elseif {[regexp -nocase "vcf$" $fileToCheck]} {
+        set f [open "$fileToCheck"]
+        set type "vcf"
+    } elseif {[regexp -nocase ".chain$" $fileToCheck]} {
+        set f [open "$fileToCheck"]
+        set type "chain"
+    }
+
+	if {$type eq "vcf"} {
+	    while {![eof $f]} {
+	        set L [gets $f]
+			if {[regexp "^#" $L]} {continue}
+			if {[string range [lindex $L 0]	0 2] eq "chr"} {
+				return "with"
+			} else {
+				return "without"
+			}
+		}
+	} elseif {$type eq "chain"} {
+        while {![eof $f]} {
+            set L [gets $f]
+            if {[regexp "^#" $L]} {continue}
+			if {[regexp "chr" $L]} {
+                return "with"
+            } else {
+                return "without"
+            }
+		}
+	}
+}
+
+

@@ -123,6 +123,19 @@ proc configureLiftoverSV {argv} {
         puts "############################################################################"
         exit 2
     }
+	# CHAIN: with or without prefix "chr"? Should be the same as in the VCF input file
+	# (proc "fileWithChr" returns with or without)
+	set chr_input [fileWithChr $g_liftoverSV(INPUTFILE)]
+	set chr_chain [fileWithChr $g_liftoverSV(CHAIN)]
+	if {$chr_input ne $chr_chain} {
+        puts "############################################################################"
+        puts "Bad CHAIN file:"
+		puts "- input file $chr_input prefix 'chr' ($g_liftoverSV(INPUTFILE))"
+		puts "- chain file $chr_chain prefix 'chr' ($g_liftoverSV(CHAIN))"
+		puts "Exit with error."
+        puts "############################################################################"
+        exit 2
+	}
 
     ## REFFASTASEQ: If defined, we should have an existing ".fasta" file
     if {![info exists g_liftoverSV(REFFASTASEQ)]} {

@@ -27,6 +27,8 @@ For more details, please see the README file.
 	- Add a DOI in README.md
 	- Lift over INFO/SVLEN, INFO/SVSIZE only for deletion, duplication, insertion and inversion
 	  => For other SV types (e.g. translocation, complex SV, etc..), the SVLEN is set to . in the output file when present in the input file
+	- Check if the VCF input file and the CHAIN file have the same chromosome format (with or without the "chr" prefix)
+
 
 July, 23, 2024, liftoverSV version 0.1.1_beta
 	- Add the --PERCENT,P option
