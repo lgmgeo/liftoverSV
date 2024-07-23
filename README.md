@@ -41,6 +41,11 @@
 
 --REFFASTASEQ,-R <File>       The reference sequence (fasta) for the TARGET genome build (i.e., the new one after the liftover)
 ```
+
+## How to cite?
+Please cite the following doi if you are using this tool in your research:
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12799803.svg)](https://doi.org/10.5281/zenodo.12799803)
+
 ## liftoverSV: version 0.1.1_beta
 
 * Lift over #CHROM and POS
