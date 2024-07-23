@@ -1,5 +1,5 @@
 ############################################################################################################
-# liftoverSV 1.0.0_beta                                                                                    #
+# liftoverSV 0.1.1_beta                                                                                    #
 #                                                                                                          #
 # Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
@@ -210,7 +210,7 @@ proc writeTheLiftedVCF {} {
 				regsub "(^END|;END)=(\[^;\]+)(;|$)" $infos "\\1=$theNewEND\\3" infos
 				set svlen [expr {$end-$start}]
                 set svlenlifted [expr {$theNewEND-$theNewStart}]
-				if {$svlenlifted < [expr {$svlen*0.95}] || $svlenlifted > [expr {$svlen*1.05}]} {
+				if {$svlenlifted < [expr {$svlen*(1-$g_liftoverSV(PERCENT))}] || $svlenlifted > [expr {$svlen*(1+$g_liftoverSV(PERCENT))}]} {
 					# Case4
 					lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tthe distance between the two lifted positions changes significantly (svlen diff > 5%)"
 					incr j
@@ -248,7 +248,7 @@ proc writeTheLiftedVCF {} {
 	            regsub "(^SVEND|;SVEND)=(\[^;\]+)(;|$)" $infos "\\1=$theNewSVEND\\3" infos
                 set svlen [expr {$svend-$start}]
 				set svlenlifted [expr {$theNewSVEND-$theNewStart}]
-                if {$svlenlifted < [expr {$svlen*0.95}] || $svlenlifted > [expr {$svlen*1.05}]} {
+                if {$svlenlifted < [expr {$svlen*(1-$g_liftoverSV(PERCENT))}] || $svlenlifted > [expr {$svlen*(1+$g_liftoverSV(PERCENT))}]} {
                     # Case4
                     lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tthe distance between the two lifted positions changes significantly (svlen diff > 5%; $svlen # $svlenlifted)"
                     incr j

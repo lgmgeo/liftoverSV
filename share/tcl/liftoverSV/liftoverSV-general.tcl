@@ -1,5 +1,5 @@
 ############################################################################################################
-# LiftOver_SVs_from_VCF 1.0.0_beta                                                                         #
+# LiftOver_SVs_from_VCF 0.1.1_beta                                                                         #
 #                                                                                                          #
 # Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #

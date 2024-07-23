@@ -1,5 +1,5 @@
 ############################################################################################################
-# liftoverSV 1.0.0_beta                                                                                    #
+# liftoverSV 0.1.1_beta                                                                                    #
 #                                                                                                          #
 # Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
@@ -29,12 +29,13 @@ proc configureLiftoverSV {argv} {
     #######################
     set g_liftoverSV(BEDTOOLS)      "bedtools"
 	set g_liftoverSV(LIFTOVER)      "liftOver"   
+    set g_liftoverSV(PERCENT)       "0.05"
 
 
     ##################################
     ## Load options given in arguments
     ##################################
-    set lOptionsOk "B BEDTOOLS C CHAIN h help I INPUTFILE L LIFTOVER O OUTPUTFILE R REFFASTASEQ"
+    set lOptionsOk "B BEDTOOLS C CHAIN h help I INPUTFILE L LIFTOVER O OUTPUTFILE P PERCENT R REFFASTASEQ"
 
     set i 0
     set j 1
@@ -54,6 +55,8 @@ proc configureLiftoverSV {argv} {
                 set optionName LIFTOVER
             } elseif {$optionName eq "O"} {
                 set optionName OUTPUTFILE
+            } elseif {$optionName eq "P"} {
+                set optionName PERCENT
             } elseif {$optionName eq "R"} {
                 set optionName REFFASTASEQ
             } elseif {$optionName eq "h" || $optionName eq "help"} {
@@ -163,4 +166,12 @@ proc configureLiftoverSV {argv} {
         } 
     }
 
+    ## PERCENT: should be defined between 0 and 1.
+    if {$g_liftoverSV(PERCENT) < 0 || $g_liftoverSV(PERCENT) > 1} {
+        puts "Bad option value: --PERCENT = $g_liftoverSV(PERCENT)"
+        puts "Should be in the \[0-1\] range values, default = 0.05"
+        exit 2
+    }
+
+ 
 }

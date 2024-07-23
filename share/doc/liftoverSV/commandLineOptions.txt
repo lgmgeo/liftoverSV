@@ -15,8 +15,7 @@ OPTIONS
                               See http://hgdownload.soe.ucsc.edu/downloads.html#terms for where to download chain files.
                               Required
 
---help,-h <Boolean>           Display the help message  
-                              Default value: false. Possible values: {true, false}
+--help,-h                     Display the help message  
 
 --INPUTFILE,-I <File>         The SV VCF input file
                               Required
@@ -26,6 +25,9 @@ OPTIONS
 
 --OUTPUTFILE,-O <File>		  The liftover SV VCF output file
                               Required
+
+--PERCENT,-P <float>          Variation in length authorized for a lifted SV (e.g. difference max between SVLEN < 5%) 
+                              Default value: 0.05
 
 --REFFASTASEQ,-R <File>       The reference sequence (fasta) for the TARGET genome build (i.e., the new one after the liftover)
  

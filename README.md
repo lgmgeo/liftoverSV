@@ -36,9 +36,12 @@
 --OUTPUTFILE,-O <File>        The liftover SV VCF output file
                               Required
 
+--PERCENT,-P <float>          Variation in length authorized for a lifted SV (e.g. difference max between SVLEN < 5%)
+                              Default value: 0.05
+
 --REFFASTASEQ,-R <File>       The reference sequence (fasta) for the TARGET genome build (i.e., the new one after the liftover)
 ```
-## liftoverSV: version 1.0.0_beta
+## liftoverSV: version 0.1.1_beta
 
 * Lift over #CHROM and POS
 
