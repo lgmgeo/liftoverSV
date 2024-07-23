@@ -43,7 +43,7 @@
 ```
 
 ## How to cite?
-Please cite the following doi if you are using this tool in your research:
+Please cite the following doi if you are using this tool in your research:</br>
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12799803.svg)](https://doi.org/10.5281/zenodo.12799803)
 
 ## liftoverSV: version 0.1.1_beta
@@ -58,6 +58,9 @@ Please cite the following doi if you are using this tool in your research:
    - Case4: the distance between the two lifted positions changes significantly (difference between both SVLENs > 5%)
 
 * Lift over INFO/SVLEN, INFO/SVSIZE
+
+* The structured contig field includes all the ID attributes (do not include additional optional attributes)</br>
+e.g. `##contig=<ID=chr22>`
 
 ## Requirements
 ### a) The UCSC Liftover tool (required)

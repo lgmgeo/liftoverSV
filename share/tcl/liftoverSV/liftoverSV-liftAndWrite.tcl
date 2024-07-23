@@ -98,21 +98,34 @@ proc memorizeGenomicCoordinates {tmpBEDfile tmpBEDfileLifted} {
     global g_liftoverSV
 	global g_ID
 	global g_liftedCoord
+	global g_L_chrom
 
 	puts "\n...memorizing the lifted coordinates ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
+    set g_L_chrom(notLifted) {}
 	set F [open "$tmpBEDfile"]
 	while {[gets $F L]>=0} {
 	    set Ls [split $L "\t"]
+		set chrom [lindex $Ls 0]
+		set pos [lindex $Ls 1]
 	    set id [lindex $Ls end]
-	    set g_ID([lindex $Ls 0],[lindex $Ls 1]) $id
+	    set g_ID($chrom,$pos) $id
+        if {[lsearch -exac $g_L_chrom(notLifted) $chrom] eq -1} {
+            lappend g_L_chrom(notLifted) $chrom
+        }
 	}
 	file delete -force $tmpBEDfile
 
+	set g_L_chrom(lifted) {}
 	set F [open "$tmpBEDfileLifted"]
 	while {[gets $F L]>=0} {
 	    set Ls [split $L "\t"]
 		set id [lindex $Ls end]
-		set g_liftedCoord($id) "[lindex $Ls 0],[lindex $Ls 1]"
+        set chrom [lindex $Ls 0]
+        set pos [lindex $Ls 1]
+		set g_liftedCoord($id) "$chrom,$pos"
+		if {[lsearch -exac $g_L_chrom(lifted) $chrom] eq -1} {
+			lappend g_L_chrom(lifted) $chrom
+		}
 	}
 	file delete -force $tmpBEDfile
 	file delete -force $tmpBEDfileLifted
@@ -133,6 +146,7 @@ proc writeTheLiftedVCF {} {
     global g_liftoverSV
     global g_ID
     global g_liftedCoord
+    global g_L_chrom
 
 
     if {![regsub ".vcf$" $g_liftoverSV(OUTPUTFILE) ".unmapped" unmappedFile]} {
@@ -161,11 +175,26 @@ proc writeTheLiftedVCF {} {
 	} else {
 		set F [open "$g_liftoverSV(INPUTFILE)"]
 	}
+	set testContigs 1
 	while {[gets $F L]>=0} {
 
 	    if {[regexp "^#" $L]} {
-			regsub ",length=\[0-9\]+" $L "" L
-			lappend L_toWrite "$L"
+			if {[regexp "^##contig=<ID=" $L]} {
+				##contig=<ID=chr1,length=249250621>
+				regsub ",length=\[0-9\]+" $L "" L
+				set testContigs 2
+				lappend L_toWrite "$L"
+				continue
+			}
+			if {$testContigs eq 2} {
+				foreach chrom [lsort $g_L_chrom(lifted)] {
+					if {[lsearch -exact $g_L_chrom(notLifted) $chrom] eq -1} {
+						lappend L_toWrite "##contig=<ID=$chrom>"
+					}
+				}
+				set testContigs 0
+			}
+            lappend L_toWrite "$L"
 			continue
 		}
 
