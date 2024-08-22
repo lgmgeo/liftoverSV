@@ -80,10 +80,14 @@ proc liftoverGenomicCoordinates {tmpBEDfile} {
 	puts "\n...liftover $tmpBEDfile ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
 	regsub ".bed" $tmpBEDfile ".lifted.bed" tmpBEDfileLifted
 	set command "$g_liftoverSV(LIFTOVER) $tmpBEDfile $g_liftoverSV(CHAIN) $tmpBEDfileLifted unMapped"
-	puts $command
+	puts "\t- Command line:"
+	puts "\t\t$command"
 
 	if {[catch {eval exec $command} Message]} {
-		puts $Message
+		puts "\t- Output:"
+		foreach L [split $Message "\n"] {
+			puts "\t\t$L"
+		}
 	}
 
 	file delete -force unMapped
@@ -141,6 +145,26 @@ proc memorizeGenomicCoordinates {tmpBEDfile tmpBEDfileLifted} {
 #   - Case2: one position (start or end) goes to a different chrom from the other
 #   - Case3: "lifted start" > "lifted end"
 #   - Case4: the distance between the two lifted positions changes significantly (difference between both SVLENs > 5%)
+
+# Source:
+#########
+# https://samtools.github.io/hts-specs/VCFv4.4.pdf
+#
+# END:
+######
+# The END of each allele is defined as:
+#   - Non-symbolic alleles: POS + length of REF allele − 1.
+#   - <INS> symbolic structural variant alleles: POS + length of REF allele − 1.
+#   - <DEL>, <DUP>, <INV>, and <CNV> symbolic structural variant alleles: POS + SVLEN.
+# <*> symbolic allele: the last reference call position.
+# END must be present for all records containing the <*> symbolic allele
+#
+# SVLEN:
+########
+# SVLEN is defined for INS, DUP, INV , and DEL symbolic alleles as the number of the inserted, duplicated, inverted, and deleted bases respectively.
+# SVLEN is defined for CNV symbolic alleles as the length of the segment over which the copy number variant is defined.
+# The missing value . should be used for all other ALT alleles, including ALT alleles using breakend notation.
+# ==> For INS, the SVLEN is defined as the number of the inserted bases. No liftover needed!!
 proc writeTheLiftedVCF {} {
 
     global g_liftoverSV
@@ -160,8 +184,8 @@ proc writeTheLiftedVCF {} {
 	file delete -force $g_liftoverSV(OUTPUTFILE)
     file delete -force $unmappedFile
 
-	# SVLEN calculation only for the following svtypes (not TRA, CPX...)
-	set L_svtypes {DUP DEL INV INS}
+	# SVLEN calculation only for the following svtypes (not INS, TRA, CPX...)
+	set L_svtypes {DUP DEL INV}
 
 	set L_toWrite {}
 	set i 0
@@ -191,7 +215,7 @@ proc writeTheLiftedVCF {} {
 			}
 			if {$testContigs eq 2} {
 				foreach chrom [lsort $g_L_chrom(lifted)] {
-					if {[lsearch -exact $g_L_chrom(notLifted) $chrom] eq -1} {
+					if {[lsearch -exact $g_L_chrom(notLifted) $chrom] ne -1} {
 						lappend L_toWrite "##contig=<ID=$chrom>"
 					}
 				}
@@ -222,26 +246,7 @@ proc writeTheLiftedVCF {} {
 		}
 		set theNewL "$theNewChrom\t$theNewStart\t[join [lrange $Ls 2 6] "\t"]"
 
-
-        # Source: 
-		#########
-		# https://samtools.github.io/hts-specs/VCFv4.4.pdf
-
-		# END:
-		######
-		# The END of each allele is defined as:
-		#   - Non-symbolic alleles: POS + length of REF allele − 1.
-		#   - <INS> symbolic structural variant alleles: POS + length of REF allele − 1.
-		#   - <DEL>, <DUP>, <INV>, and <CNV> symbolic structural variant alleles: POS + SVLEN.
-		# <*> symbolic allele: the last reference call position.
-		# END must be present for all records containing the <*> symbolic allele
-	
-		# SVLEN:
-		########
-		# SVLEN is defined for INS, DUP, INV , and DEL symbolic alleles as the number of the inserted, duplicated, inverted, and deleted bases respectively. 
-		# SVLEN is defined for CNV symbolic alleles as the length of the segment over which the copy number variant is defined. 
-		# The missing value . should be used for all other ALT alleles, including ALT alleles using breakend notation.
-
+		set end "-10"
 	    if {[regexp "(^END|;END|^SVEND|;SVEND)=(\[^;\]+)(;|$)" $infos match tutu end titi]} {
 			set theID $g_ID($chrom,$end)
 			if {[info exists g_liftedCoord($theID)]} {
@@ -281,13 +286,24 @@ proc writeTheLiftedVCF {} {
 	    }
 
 		set svtype [normalizeSVtype $alt]
-		if {[lsearch -exact $L_svtypes $svtype] eq -1 && [info exists svlenlifted]} {set svlenlifted "."}
-	
-	    if {[info exists svlenlifted]} {
+
+		# Lift over INFO/SVLEN, INFO/SVSIZE
+    	###################################
+		# Set SVLEN/SVSIZE to "." for SV type not equal to DEL, DUP, INV or INS (TRA, CPX...)
+		if {[lsearch -exact $L_svtypes $svtype] eq -1} {
+			 if {$svtype ne "INS" && [info exists svlenlifted]} {set svlenlifted "."}
+		} 
+        # Keep the same SVLEN/SVSIZE for insertion (the number of the inserted bases remains the same)
+		if {$svtype eq "INS"} {catch {unset svlenlifted}}
+
+        # Lift over INFO/SVLEN, INFO/SVSIZE for deletion, duplication and inversion
+		if {[info exists svlenlifted]} {
 			regsub "(^SVLEN|;SVLEN)=(-)?(\[0-9\]+)(;|$)" $infos "\\1=\\2$svlenlifted\\4" infos
-	        regsub "(^SVSIZE|;SVSIZE)=(-)?(\[0-9\]+)(;|$)" $infos "\\1=\\2$svlenlifted\\4" infos
+			regsub "(^SVSIZE|;SVSIZE)=(-)?(\[0-9\]+)(;|$)" $infos "\\1=\\2$svlenlifted\\4" infos
 		} 
 		catch {unset svlenlifted}
+
+
 
 		append theNewL "\t$infos\t[join [lrange $Ls 8 end] "\t"]"
 

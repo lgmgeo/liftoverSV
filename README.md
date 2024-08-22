@@ -52,18 +52,23 @@ Please cite the following doi if you are using this tool in your research:</br>
 
 ## liftoverSV: 
 
-* Lift over #CHROM and POS
+Lifts over a SV VCF file from one reference build to another:
 
-* Lift over INFO/END and INFO/SVEND</br>
+* Lifts over #CHROM and POS
+
+* Lifts over INFO/END and INFO/SVEND</br>
 => drop the SV if:</br>
    - Case1: one position (start or end) is lifted while the other doesn't
    - Case2: one position (start or end) goes to a different chrom from the other
    - Case3: "lifted start" > "lifted end"
    - Case4: the distance between the two lifted positions changes significantly (difference between both SVLENs > 5%)
 
-* Lift over INFO/SVLEN, INFO/SVSIZE (for deletion, duplication, insertion and inversion)
+* Lifts over INFO/SVLEN, INFO/SVSIZE:
+   - Lifts over for deletion, duplication and inversion (SVLEN_lifted = End_lifted - Start_Lifted)
+   - Keep the same SVLEN/SVSIZE for insertion (the number of the inserted bases remains the same)
+   - Set SVLEN/SVSIZE to "." for SV type not equal to DEL, DUP, INV or INS (TRA, CPX...)
 
-* The structured contig field includes all the ID attributes (do not include additional optional attributes)</br>
+* Checks that the structured contig field includes all the ID attributes (do not include additional optional attributes)</br>
 e.g. `##contig=<ID=chr22>`
 
 ## Requirements
@@ -81,14 +86,14 @@ See section 3: "INFO keys used for structural variants"
 
 ## Feature requested for future release
 
-* Check INFO/CIPOS and INFO/CIEND</br>
+* Checks INFO/CIPOS and INFO/CIEND</br>
 => POS-CIPOS >0</br>
 => END+CIEND < chrom_length</br>
 
-* Liftover INFO/MEINFO and INFO/METRANS
+* Lifts over INFO/MEINFO and INFO/METRANS
 
-* Liftover INFO/HOMLEN, INFO/HOMSEQ
+* Lifts over INFO/HOMLEN, INFO/HOMSEQ
   
-* Liftover ALT when described with square bracket notation. For example, G]17:198982] or ]chr1:3000]A</br>
+* Lifts over ALT when described with square bracket notation. For example, G]17:198982] or ]chr1:3000]A</br>
 cf variantextractor for notation rules
 

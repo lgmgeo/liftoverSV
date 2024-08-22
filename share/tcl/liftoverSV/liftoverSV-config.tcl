@@ -31,7 +31,7 @@ proc configureLiftoverSV {argv} {
 	set g_liftoverSV(BCFTOOLS)		"bcftools"
 	set g_liftoverSV(LIFTOVER)      "liftOver"   
     set g_liftoverSV(PERCENT)       "0.05"
-
+    set g_liftoverSV(INPUTFILE)     ""
 
     ##################################
     ## Load options given in arguments
