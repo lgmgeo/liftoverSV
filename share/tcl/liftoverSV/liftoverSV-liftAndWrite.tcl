@@ -187,10 +187,18 @@ proc writeTheLiftedVCF {} {
 	# SVLEN calculation only for the following svtypes (not INS, TRA, CPX...)
 	set L_svtypes {DUP DEL INV}
 
+	# Memorize if there are new INFO/FORMAT annotations to add in the header lines
+    set L_header_INFO ""
+    set L_header_FORMAT ""
+	set L_SVlines_INFO ""
+	set L_SVlines_FORMAT ""
+    set L_new_INFO ""
+    set L_new_FORMAT ""
+
 	set L_toWrite {}
 	set i 0
 	set L_unmappedToWrite {}
-	set j 0
+	set j 1
 
 	set case1 0
     set case2 0
@@ -222,6 +230,16 @@ proc writeTheLiftedVCF {} {
 				set testContigs 0
 			}
             lappend L_toWrite "$L"
+
+			##INFO=<ID=ID,Number=number,Type=type,Description="description",Source="source",Version="version">
+			##FORMAT=<ID=ID,Number=number,Type=type,Description="description">
+			if {[regexp "^##INFO=<ID=(\[^,\]+)," $L match knownValue]} {
+				lappend L_header_INFO $knownValue
+			}
+            if {[regexp "^##FORMAT=<ID=(\[^,\]+)," $L match knownValue]} {
+                lappend L_header_FORMAT $knownValue
+            }
+
 			continue
 		}
 
@@ -232,6 +250,17 @@ proc writeTheLiftedVCF {} {
 
 		set alt [lindex $Ls 4]
 		set infos [lindex $Ls 7]
+
+		# Memorize all the INFO annotations presents in the SV lines
+		regsub -all "=\[^;\]+" $infos "" infosToCheck
+		lappend L_SVlines_INFO {*}[split $infosToCheck ";"]
+		set L_SVlines_INFO [lsort -unique $L_SVlines_INFO]
+
+        # Memorize all the FORMAT annotations presents in the SV lines
+        set format_annot [lindex $Ls 8]
+        lappend L_SVlines_FORMAT {*}[split $format_annot ";"]
+        set L_SVlines_FORMAT [lsort -unique $L_SVlines_FORMAT]
+
 
 		set theID $g_ID($chrom,$start)
 		if {[info exists g_liftedCoord($theID)]} {
@@ -321,8 +350,14 @@ proc writeTheLiftedVCF {} {
 
 	}
 	close $F
-	WriteTextInFile [join $L_toWrite "\n"] $g_liftoverSV(OUTPUTFILE)
-    WriteTextInFile [join $L_unmappedToWrite "\n"] $unmappedFile
+
+	# Writings
+	if {$L_toWrite ne ""} {
+		WriteTextInFile [join $L_toWrite "\n"] $g_liftoverSV(OUTPUTFILE)
+	}
+    if {$L_unmappedToWrite ne ""} {
+		WriteTextInFile [join $L_unmappedToWrite "\n"] $unmappedFile
+	}
 	puts "\t- $i mapped SV"
 
 	puts "\n...unmapped SV (see [file tail $unmappedFile] for details):"
@@ -331,7 +366,133 @@ proc writeTheLiftedVCF {} {
 	puts "\t- $case3 SV with \"lifted start\" > \"lifted end\""
 	puts "\t- $case4 SV with the distance between the two lifted positions that changes significantly (difference between both SVLENs > 5%)"
 
+
+	# Add new header lines (only for INFO or FORMAT) if needed
+	foreach val $L_SVlines_INFO {
+		if {[lsearch -exact $L_header_INFO $val] eq -1} {lappend L_new_INFO $val}
+	}
+    foreach val $L_SVlines_FORMAT {
+        if {[lsearch -exact $L_header_FORMAT $val] eq -1} {lappend L_new_FORMAT $val}
+    }
+
+	if {$L_new_INFO ne "" || $L_new_FORMAT ne ""} {
+		addNewHeaderLinesAndSort $L_new_INFO $L_new_FORMAT
+	}
+
+	return
+}
+
+
+# Meta-information lines in VCF:
+################################
+##fileformat=VCFv4.4
+##assembly=url
+##contig=<ID=ctg1,length=81195210,URL=ftp://somewhere.example/assembly.fa,md5=f126cdf8a6e0c7f379d618ff66beb2da,...>
+##FILTER=<ID=ID,Description="description">
+##INFO=<ID=ID,Number=number,Type=type,Description="description",Source="source",Version="version">
+##FORMAT=<ID=ID,Number=number,Type=type,Description="description">
+##ALT=<ID=type,Description="description">
+##META=<ID=Tissue,Type=String,Number=.,Values=[Blood, Breast, Colon, Lung, ?]>
+##SAMPLE=<ID=Sample1,Assay=WholeGenome,Ethnicity=AFR,Disease=None,Description="Patient germline genome from unaffected",DOI=url>
+##PEDIGREE=<ID=TumourSample,Original=GermlineID>
+
+# Add new header lines (only for INFO or FORMAT) if needed:
+###########################################################
+# As the format (Number, String) is not known, "Number=." and "Type=String" values are used by default:
+# - ##FORMAT=<ID=XXX,Number=.,Type=String,Description="XXX">
+# - ##INFO=<ID=YYY,Number=.,Type=String,Description="YYY">
+proc addNewHeaderLinesAndSort {L_new_INFO L_new_FORMAT} {
+
+    global g_liftoverSV
+ 
+    regsub ".vcf$" $g_liftoverSV(OUTPUTFILE) ".checked.vcf" checkedOUTPUTFILE
+	file delete -force $checkedOUTPUTFILE
+
+	foreach val $L_new_INFO {
+		lappend L_INFO "##INFO=<ID=$val,Number=.,Type=String,Description=\"$val\">"
+	}
+    foreach val $L_new_FORMAT {
+        lappend L_FORMAT "##FORMAT=<ID=$val,Number=.,Type=String,Description=\"$val\">"
+    }
+
+    set L_fileformat ""
+    set L_assembly ""
+	set L_contig ""
+	set L_FILTER ""
+	set L_ALT ""
+	set L_META ""
+	set L_SAMPLE ""
+	set L_PEDIGREE ""
+	set L_others ""
+	set L_CHROM ""
+	set F [open $g_liftoverSV(OUTPUTFILE)]
+    while {[gets $F L]>=0} {
+        if {[regexp "^#" $L]} {
+            if {[regexp "^##fileformat=" $L]} {
+                lappend L_fileformat $L
+                continue
+            } elseif {[regexp "^##assembly=" $L]} {
+                lappend L_assembly "$L (before using the liftoverSV)"
+                continue
+            } elseif {[regexp "^##contig=<ID" $L]} {
+                lappend L_contig $L
+                continue
+            } elseif {[regexp "^##FILTER=<ID" $L]} {
+                lappend L_FILTER $L
+                continue
+            } elseif {[regexp "^##INFO=<ID" $L]} {
+                lappend L_INFO $L
+                continue
+            } elseif {[regexp "^##FORMAT=<ID" $L]} {
+                lappend L_FORMAT $L
+                continue
+            } elseif {[regexp "^##ALT=<ID" $L]} {
+                lappend L_ALT $L
+                continue
+            } elseif {[regexp "^##META=<ID" $L]} {
+                lappend L_META $L
+                continue
+            } elseif {[regexp "^##SAMPLE=<ID" $L]} {
+                lappend L_SAMPLE $L
+                continue
+            } elseif {[regexp "^##PEDIGREE=<ID" $L]} {
+                lappend L_PEDIGREE $L
+                continue
+            } elseif {[regexp "^#CHROM" $L]} {
+				set L_CHROM $L
+			} else {
+				lappend L_others $L
+			}
+		} else {
+			break
+		}
+	}
 	
+	if {$L_fileformat ne ""} {WriteTextInFile [join [lsort -dictionary $L_fileformat] "\n"] $checkedOUTPUTFILE}
+
+	# Indicate the use of liftoverSV in the header lines
+    if {$L_assembly eq ""} {lappend L_assembly "##assembly=liftoverSV used with $g_liftoverSV(CHAIN)"}
+	WriteTextInFile [join [lsort -dictionary $L_assembly] "\n"] $checkedOUTPUTFILE
+    set newHeaderLine "##liftoverSV_version=$g_liftoverSV(Version); $g_liftoverSV(CHAIN); [clock format [clock seconds] -format "%B %d %Y %H:%M"]"
+    WriteTextInFile $newHeaderLine $checkedOUTPUTFILE
+
+    if {$L_contig ne ""} {WriteTextInFile [join [lsort -dictionary $L_contig] "\n"] $checkedOUTPUTFILE}
+    if {$L_FILTER ne ""} {WriteTextInFile [join [lsort -dictionary $L_FILTER] "\n"] $checkedOUTPUTFILE}
+    if {$L_INFO ne ""} {WriteTextInFile [join [lsort -dictionary $L_INFO] "\n"] $checkedOUTPUTFILE}
+    if {$L_FORMAT ne ""} {WriteTextInFile [join [lsort -dictionary $L_FORMAT] "\n"] $checkedOUTPUTFILE}
+    if {$L_ALT ne ""} {WriteTextInFile [join [lsort -dictionary $L_ALT] "\n"] $checkedOUTPUTFILE}
+    if {$L_META ne ""} {WriteTextInFile [join [lsort -dictionary $L_META] "\n"] $checkedOUTPUTFILE}
+    if {$L_SAMPLE ne ""} {WriteTextInFile [join [lsort -dictionary $L_SAMPLE] "\n"] $checkedOUTPUTFILE}
+    if {$L_PEDIGREE ne ""} {WriteTextInFile [join [lsort -dictionary $L_PEDIGREE] "\n"] $checkedOUTPUTFILE}
+    if {$L_others ne ""} {WriteTextInFile [join [lsort -dictionary $L_others] "\n"] $checkedOUTPUTFILE}
+
+	WriteTextInFile $L_CHROM $checkedOUTPUTFILE
+
+	eval exec grep -v "^#" $g_liftoverSV(OUTPUTFILE) | sort -k1,1V -k2,2n >> $checkedOUTPUTFILE
+
+	file rename -force $checkedOUTPUTFILE $g_liftoverSV(OUTPUTFILE)
+
+	return
 }
 
 
