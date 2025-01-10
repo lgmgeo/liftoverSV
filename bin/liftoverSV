@@ -69,7 +69,7 @@ set g_liftoverSV(bashDir)    "$g_liftoverSV(installDir)/share/bash/liftoverSV"
 # Sources
 #########
 source $g_liftoverSV(tclDir)/liftoverSV-config.tcl
-source $g_liftoverSV(tclDir)/liftoverSV-extractDNAseq.tcl
+source $g_liftoverSV(tclDir)/liftoverSV-DNA.tcl
 source $g_liftoverSV(tclDir)/liftoverSV-general.tcl
 source $g_liftoverSV(tclDir)/liftoverSV-help.tcl
 source $g_liftoverSV(tclDir)/liftoverSV-liftAndWrite.tcl 
@@ -140,6 +140,10 @@ puts "\t*********************************************"
 #set seq [ExtractDNAseq 1 999888 999999 /PROGS/EXTERN/AnnotSV/AnnotSV_latest/share/AnnotSV/Annotations_Human/BreakpointsAnnotations/GCcontent/GRCh38/GRCh38_chromFa.fasta]
 #puts $seq
 
+# Memorize the size of the chromosomes in the query build 
+#########################################################
+retrieveChromSize 
+ 
 
 # Extract the different genomic coordinates from the input VCF 
 ##############################################################

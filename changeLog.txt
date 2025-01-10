@@ -23,6 +23,7 @@ For more details, please see the README file.
 
 
 Jan, , 2025, liftoverSV version 0.1.3_beta
+	- Check/Update INFO/CIPOS and INFO/CIEND
 	- Update/create and sort some VCF header lines
 	    - Checks that the "contig" field includes all the ID attributes (do not include additional optional attributes)</br>
 	      e.g. `##contig=<ID=chr22>` added after a lift from chr1 to chr22

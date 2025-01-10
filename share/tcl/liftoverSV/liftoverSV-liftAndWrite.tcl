@@ -165,6 +165,13 @@ proc memorizeGenomicCoordinates {tmpBEDfile tmpBEDfileLifted} {
 # SVLEN is defined for CNV symbolic alleles as the length of the segment over which the copy number variant is defined.
 # The missing value . should be used for all other ALT alleles, including ALT alleles using breakend notation.
 # ==> For INS, the SVLEN is defined as the number of the inserted bases. No liftover needed!!
+#
+# INFO/CIPOS and INFO/CIEND:
+############################
+# Check and modify if needed the CIPOS/CIEND values in order to have:
+#	=> POS-CIPOS > 0
+#	=> END+CIEND < chrom_length
+#
 proc writeTheLiftedVCF {} {
 
     global g_liftoverSV
@@ -295,7 +302,9 @@ proc writeTheLiftedVCF {} {
 					incr case3
 					continue
 				}
+
 				regsub "(^END|;END)=(\[^;\]+)(;|$)" $infos "\\1=$theNewEND\\3" infos
+
 				set svlen [expr {$end-$start}]
                 set svlenlifted [expr {$theNewEND-$theNewStart}]
 				if {$svlenlifted < [expr {$svlen*(1-$g_liftoverSV(PERCENT))}] || $svlenlifted > [expr {$svlen*(1+$g_liftoverSV(PERCENT))}]} {
@@ -316,6 +325,7 @@ proc writeTheLiftedVCF {} {
 
 		set svtype [normalizeSVtype $alt]
 
+
 		# Lift over INFO/SVLEN, INFO/SVSIZE
     	###################################
 		# Set SVLEN/SVSIZE to "." for SV type not equal to DEL, DUP, INV or INS (TRA, CPX...)
@@ -333,7 +343,27 @@ proc writeTheLiftedVCF {} {
 		catch {unset svlenlifted}
 
 
+		# INFO/CIPOS and INFO/CIEND:
+		############################
+		# Check and modify if needed the CIPOS/CIEND values in order to have:
+		#   => POS-CIPOS > 0
+		#   => END+CIEND < chrom_length
+		if {[regexp "(^CIPOS|;CIPOS)=(\[^;\]+)(;|$)" $infos match titi cipos]} {
+			if {[expr {$theNewStart-$cipos}] <= 0} {
+				set cipos [expr {$theNewStart-1}]
+				regsub "(^CIPOS|;CIPOS)=(\[0-9\]+)(;|$)" $infos "\\1=$cipos\\3" infos
+			}
+		}
+        if {[regexp "(^CIEND|;CIEND)=(\[^;\]+)(;|$)" $infos match titi ciend]} {
+            if {[expr {$theNewEND+$ciend}] > $g_liftoverSV(sizeAfterLift,$theNewChrom)} {
+				set ciend [expr {$g_liftoverSV(sizeAfterLift,$theNewChrom)-$theNewEND}]
+				regsub "(^CIEND|;CIEND)=(\[0-9\]+)(;|$)" $infos "\\1=$ciend\\3" infos
+			}
+        }
 
+
+		# tmp output (before the sort)
+		##############################
 		append theNewL "\t$infos\t[join [lrange $Ls 8 end] "\t"]"
 
 		lappend L_toWrite $theNewL

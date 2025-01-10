@@ -1,7 +1,7 @@
 <p align="center">
 <div align="center">
     <h1 style="font-weight: bold">liftoverSV:
-      <h3>Lifts over a Structural Variation VCF file from one reference build to another</h3>
+      <h3>Lifts over a Structural Variation VCF file from one reference build to a query build</h3>
     </h1>
 </div>
 
@@ -68,13 +68,18 @@ Lifts over a SV VCF file from one reference build to another:
    - Case2: one position (start or end) goes to a different chrom from the other
    - Case3: "lifted start" > "lifted end"
    - Case4: the distance between the two lifted positions changes significantly (Default: difference between both SVLENs > 5%)
+	(see "OUTPUTFILE.unmapped" file for details)
+
+* Check/Update INFO/CIPOS and INFO/CIEND, so that in the query build:
+   - POS-CIPOS >= 1 (VCF coordinates are 1-based)</br>
+   - END+CIEND <= chromosome length</br>
 
 * Update/create and sort some VCF header lines:
 	- Checks that the "contig" field includes all the ID attributes (do not include additional optional attributes)</br>
 	  e.g. `##contig=<ID=chr22>` added after a lift from chr1 to chr22
-	- Create/update the "assembly" field 
+	- Create/update the "assembly" field</br>
 	  e.g. `##assembly=liftoverSV used with hg19ToHg38.over.chain`
-	- Create the "liftoverSV_version" field
+	- Create the "liftoverSV_version" field</br>
 	  e.g. `##liftoverSV_version=0.1.2_beta; hg19ToHg38.over.chain; August 30 2024 12:30`
 	- Update the "INFO" and "FORMAT field if one value is missing.</br>
 	  As the format (Number, String) is not known, "Number=." and "Type=String" values are used by default:</br>
@@ -95,10 +100,6 @@ cf https://samtools.github.io/hts-specs/VCFv4.4.pdf</br>
 See section 3: "INFO keys used for structural variants"
 
 ## Feature requested for future release
-
-* Checks INFO/CIPOS and INFO/CIEND</br>
-=> POS-CIPOS >0</br>
-=> END+CIEND < chrom_length</br>
 
 * Lifts over INFO/MEINFO and INFO/METRANS
 

@@ -18,6 +18,25 @@
 ############################################################################################################
 
 
+# Read a .chain file to retrieve the size of the chromosomes before / after the liftover
+proc retrieveChromSize {} {
+
+    global g_liftoverSV
+
+	puts "...memorizing the size of the chromosomes for the query build"
+	foreach L [LinesFromFile $g_liftoverSV(CHAIN)] {
+		if {[regexp "^chain" $L]} {
+			#set chromBeforeLift [lindex $L 2]
+			#set sizeBeforeLift [lindex $L 3]
+            #set g_liftoverSV(sizeBeforeLift,$chromBeforeLift) $sizeBeforeLift
+            set chromAfterLift [lindex $L 7]
+            set sizeAfterLift [lindex $L 8]
+            set g_liftoverSV(sizeAfterLift,$chromAfterLift) $sizeAfterLift
+		}
+	}
+	return
+}
+
 
 # Extract DNA sequences into a fasta file based on feature coordinates
 proc ExtractDNAseq {chrom start end FastaFile} {
