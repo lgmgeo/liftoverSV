@@ -140,14 +140,14 @@ proc configureLiftoverSV {argv} {
         exit 2
 	}
 
-    ## REFFASTASEQ: If defined, we should have an existing ".fasta" file
+    ## REFFASTASEQ: We should have an existing ".fasta" or ".fa" file
     if {![info exists g_liftoverSV(REFFASTASEQ)]} {
-        #puts "LiftoverSV needs in argument the path of your REFFASTASEQ file (--REFFASTASEQ ...) - Exit with error."
-        #exit 2
-    } elseif {![regexp -nocase "(\\.fasta)$" $g_liftoverSV(REFFASTASEQ)]} {
+        puts "LiftoverSV needs in argument the path of your REFFASTASEQ file (--REFFASTASEQ ...) - Exit with error."
+        exit 2
+    } elseif {![regexp -nocase "((\\.fasta)|(\\.fa))$" $g_liftoverSV(REFFASTASEQ)]} {
         puts "############################################################################"
         puts "Bad option value: --REFFASTASEQ = $g_liftoverSV(REFFASTASEQ)"
-        puts "Extension file should be \".fasta\" - Exit with error."
+        puts "Extension file should be \".fasta\" or \".fa\" - Exit with error."
         puts "############################################################################"
         exit 2
     } elseif {![file exists $g_liftoverSV(REFFASTASEQ)]} {

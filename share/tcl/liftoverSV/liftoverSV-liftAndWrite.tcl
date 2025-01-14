@@ -26,7 +26,7 @@ proc extractAllTheGenomicCoordinates {} {
 
 	puts "\n...reading [file tail $g_liftoverSV(INPUTFILE)] ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
 	set tmpBEDfile "./[clock format [clock seconds] -format "%Y%m%d-%H%M%S"].tmp.bed"
-	puts "   => creation of $tmpBEDfile"
+	puts "\t* creation of $tmpBEDfile"
 
 	set L_toWrite {}
 	set i 0
@@ -43,21 +43,39 @@ proc extractAllTheGenomicCoordinates {} {
 
 	    set chrom [lindex $Ls 0]
 	    set start [lindex $Ls 1]
-		#set alt [lindex $Ls 4]
+		set alt [lindex $Ls 4]
 		set infos [lindex $Ls 7]
 
 	    lappend L_toWrite "$chrom\t$start\t[expr {$start+1}]\t$i"
 		incr i
 
+		# INFO/END
 	    if {[regexp "(^END|;END)=(\[^;\]+)(;|$)" $infos match tutu end titi]} {
-		    lappend L_toWrite "$chrom\t$end\t[expr {$end+1}]\t$i"
-			incr i
+			if {![info exists localMemory($chrom,$end)]} {
+				set localMemory($chrom,$end) 1
+				lappend L_toWrite "$chrom\t$end\t[expr {$end+1}]\t$i"
+				incr i
+			}
 		}
 
+		# INFO/SVEND
 		if {[regexp "(^SVEND|;SVEND)=(\[^;\]+)(;|$)" $infos match tutu svend titi]} {
-			lappend L_toWrite "$chrom\t$svend\t[expr {$svend+1}]\t$i"
-			incr i
+            if {![info exists localMemory($chrom,$svend)]} {
+                set localMemory($chrom,$svend) 1
+				lappend L_toWrite "$chrom\t$svend\t[expr {$svend+1}]\t$i"
+				incr i
+			}
 		}
+
+		# Square-bracketed ALT notation
+		if {[regexp "(\\\[|\\\])(\[chr0-9\]+):(\[0-9\]+)(\\\[|\\\])" $alt match tutu chromALT posALT]} {
+			if {![info exists localMemory($chromALT,$posALT)]} {
+                set localMemory($chromALT,$posALT) 1
+				lappend L_toWrite "$chromALT\t$posALT\t[expr {$posALT+1}]\t$i"
+				incr i
+			}
+        }
+
 
 		if {![expr {$i%100000}]} {
 			WriteTextInFile [join $L_toWrite "\n"] $tmpBEDfile
@@ -78,13 +96,18 @@ proc liftoverGenomicCoordinates {tmpBEDfile} {
     global g_liftoverSV
 
 	puts "\n...liftover $tmpBEDfile ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
+
+	if {![catch {set i [lindex [eval exec wc -l $tmpBEDfile] 0]} Message]} {
+		puts "\t($i genomic coordinates)"
+	}
+
 	regsub ".bed" $tmpBEDfile ".lifted.bed" tmpBEDfileLifted
 	set command "$g_liftoverSV(LIFTOVER) $tmpBEDfile $g_liftoverSV(CHAIN) $tmpBEDfileLifted unMapped"
-	puts "\t- Command line:"
+	puts "\t* Command line:"
 	puts "\t\t$command"
 
 	if {[catch {eval exec $command} Message]} {
-		puts "\t- Output:"
+		puts "\t* Output:"
 		foreach L [split $Message "\n"] {
 			puts "\t\t$L"
 		}
@@ -139,7 +162,7 @@ proc memorizeGenomicCoordinates {tmpBEDfile tmpBEDfileLifted} {
 
 # Write the lifted VCF
 # Rules:
-# => lift the CHROM and the END/SVEND of the SV.
+# => lift the CHROM, the END/SVEND and the REF/ALT of the SV.
 # => drop the SV if:
 #   - Case1: one position (start or end) is lifted while the other doesn't
 #   - Case2: one position (start or end) goes to a different chrom from the other
@@ -203,23 +226,27 @@ proc writeTheLiftedVCF {} {
     set L_new_FORMAT ""
 
 	set L_toWrite {}
-	set i 0
+	set n_mapped 0
 	set L_unmappedToWrite {}
-	set j 1
+	set n_unmapped 0
 
 	set case1 0
     set case2 0
     set case3 0
     set case4 0
+	set case5 0
+	set case6 0
 
 	if {[regexp ".gz$" $g_liftoverSV(INPUTFILE)]} {
-	    set F [open "|gzip -cd $g_liftoverSV(INPUTFILE)"]
+	    set F [open "| gzip -cd $g_liftoverSV(INPUTFILE)"]
 	} else {
 		set F [open "$g_liftoverSV(INPUTFILE)"]
 	}
 	set testContigs 1
 	while {[gets $F L]>=0} {
 
+		# VCF header lines
+		##################
 	    if {[regexp "^#" $L]} {
 			if {[regexp "^##contig=<ID=" $L]} {
 				##contig=<ID=chr1,length=249250621>
@@ -250,13 +277,34 @@ proc writeTheLiftedVCF {} {
 			continue
 		}
 
+		# SV lines
+		##########
 		set Ls [split $L "\t"]
 
 	    set chrom [lindex $Ls 0]
 		set start [lindex $Ls 1]
-
+		set ID [lindex $Ls 2]
+		set ref [lindex $Ls 3]
 		set alt [lindex $Ls 4]
+		set qual [lindex $Ls 5]
+		set filter [lindex $Ls 6]
 		set infos [lindex $Ls 7]
+
+        set svtype [normalizeSVtype $chrom $start $ref $alt]
+
+		# Drop SV if the SVTYPE is not DUP, DEL, INV, INS or TRA
+		# if {$svtype eq "None"} {continue}
+		# ...A voir si nécessaire
+
+		# Drop SV without a square or an angle bracketed notation.
+        # ref="G" and alt="ACTGCTAACGATCCGTTTGCTGCTAACGATCTAACGATCGGGATTGCTAACGATCTCGGG"
+		# Case5
+        if {[regexp -nocase "^\[acgtnACGTN.*\]+$" $ref$alt]} {
+            lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tnot a square or angle bracketed notation for the ALT feature."
+			incr n_unmapped 
+			incr case5
+            continue
+        }
 
 		# Memorize all the INFO annotations presents in the SV lines
 		regsub -all "=\[^;\]+" $infos "" infosToCheck
@@ -276,11 +324,95 @@ proc writeTheLiftedVCF {} {
 		} else {
 			# Case1
 		    lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tStart ($chrom,$start) not lifted"
-			incr j
+			incr n_unmapped
 			incr case1
 		    continue
 		}
-		set theNewL "$theNewChrom\t$theNewStart\t[join [lrange $Ls 2 6] "\t"]"
+	
+
+		# Lift of the sequence in REF
+        if {[regexp "^N+$" $ref]} {
+			set theNewRef $ref       ;# REF is composed only of "N"
+		} elseif {$ref eq "."} {
+            set theNewRef "."        ;# REF = "."
+		} else {
+            regsub -all "\[*.\]" $ref "" refbis
+	        set REFlength [string length $refbis] ;# REF = "A" or "CTTGA" or ...
+			set theNewRef [ExtractDNAseq $theNewChrom [expr {$theNewStart-1}] [expr {$theNewStart+$REFlength-1}]]
+		}
+
+
+		# Lift of the square-bracketed ALT 
+		set theNewALT $alt
+        if {[regexp "(\[acgtnACGTN\]*)(\\\[|\\\])(\[^:\]+):(\[0-9\]+)(\\\[|\\\])(\[acgtnACGTN\]*)" $alt match baseLeft bracketLeft chromALT posALT bracketRight baseRight]} {
+			set theIDalt $g_ID($chromALT,$posALT)
+	        if {[info exists g_liftedCoord($theIDalt)]} {
+	            set theNewChromALT [lindex [split $g_liftedCoord($theIDalt) ","] 0]
+	            set theNewPosALT [lindex [split $g_liftedCoord($theIDalt) ","] 1]
+				if {$svtype ne "TRA" && $svtype ne "None"} {
+			        if {$theNewChromALT ne $theNewChrom} {
+	                    # Case2
+	                    lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tlifted_#CHROM ($theNewChrom) and lifted_ALT ($theNewChromALT) are located on different chromosomes"
+	                    incr n_unmapped
+	                    incr case2
+	                    continue
+	                } 
+					if {$theNewStart < $theNewPosALT && $start > $posALT} {
+	                    # Case3
+	                    lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tlifted_POS ($theNewStart) < lifted_ALT ($theNewPosALT) while POS ($start) > ALT ($posALT)"
+	                    incr n_unmapped
+	                    incr case3
+	                    continue
+	                } 
+					if {$theNewStart > $theNewPosALT && $start < $posALT} {
+	                    # Case3
+	                    lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tlifted_POS ($theNewStart) > lifted_ALT ($theNewPosALT) while POS ($start) < ALT ($posALT)"
+	                    incr n_unmapped
+	                    incr case3
+		                continue
+					}
+                
+					set svlen [expr {abs($posALT-$start)}]
+					set svlenlifted [expr {abs($theNewPosALT-$theNewStart)}]
+					if {$svlenlifted < [expr {$svlen*(1-$g_liftoverSV(PERCENT))}] || $svlenlifted > [expr {$svlen*(1+$g_liftoverSV(PERCENT))}]} {
+					    # Case4
+					    lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tthe distance between lifted_ALT ($theNewPosALT) and lifted_POS ($theNewStart) changes significantly (svlen diff > $g_liftoverSV(PERCENT)%)"
+					    incr n_unmapped
+					    incr case4
+					    continue
+					}
+				}
+			} else {
+			    # Case1
+			    lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tALT ($chromALT,$posALT) not lifted"
+			    incr n_unmapped
+			    incr case1
+			    continue
+			}
+
+			# Lift the sequence in the square-bracketed ALT
+			# Examples:
+			# A]chr2:32156] => "A" = $theNewRef
+			# [chr2:32156[A => "A" = $theNewRef
+			# INS:
+			# ACCCCC[chr2:32156[ => chr2:32156 is "A" (first NT before the inserted sequence)
+			# ]chr2:32156]CCCCCA => chr2:32156 is "A"(last NT after the inserted sequence)
+			if {$baseLeft ne "" && $baseRight eq ""} {
+				set theNewALT "$theNewRef[string range $baseLeft 1 end]$bracketLeft$theNewChromALT:$theNewPosALT$bracketRight"
+			} elseif {$baseRight ne "" && $baseLeft eq ""} {
+				set theNewALT "$bracketLeft$theNewChromALT:$theNewPosALT$bracketRight[string range $baseRight 0 end-1]$theNewRef"
+			} else {
+				lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tthe ALT features ($alt) is badly formatted."
+				incr n_unmapped
+				incr case5
+				continue
+			}
+		}
+
+
+		# Memorize the 6 first columns lifted
+		set theNewL "$theNewChrom\t$theNewStart\t$ID\t$theNewRef\t$theNewALT\t$qual\t$filter"
+
 
 		set end "-10"
 	    if {[regexp "(^END|;END|^SVEND|;SVEND)=(\[^;\]+)(;|$)" $infos match tutu end titi]} {
@@ -291,39 +423,37 @@ proc writeTheLiftedVCF {} {
 				if {$theNewChrom ne $theNewChromEND} {
 					# Case2
 					lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tlifted_start and lifted_END are located on different chrom ($theNewChrom # $theNewChromEND)"
-					incr j
+					incr n_unmapped
 					incr case2
 					continue
 				}
 				if {$theNewEND < $theNewStart} {
 					# Case3
 					lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tlifted_start ($theNewStart) > lifted_end ($theNewEND)"
-					incr j
+					incr n_unmapped
 					incr case3
 					continue
 				}
-
-				regsub "(^END|;END)=(\[^;\]+)(;|$)" $infos "\\1=$theNewEND\\3" infos
 
 				set svlen [expr {$end-$start}]
                 set svlenlifted [expr {$theNewEND-$theNewStart}]
 				if {$svlenlifted < [expr {$svlen*(1-$g_liftoverSV(PERCENT))}] || $svlenlifted > [expr {$svlen*(1+$g_liftoverSV(PERCENT))}]} {
 					# Case4
-					lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tthe distance between the two lifted positions changes significantly (svlen diff > 5%)"
-					incr j
+					lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tthe distance between lifted_END ($theNewEND-) and lifted_POS ($theNewStart) changes significantly (svlen diff > $g_liftoverSV(PERCENT)%)"
+					incr n_unmapped
                     incr case4
 					continue
 				}
 			} else {
 				# Case1
 	            lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tEND ($chrom,$end) not lifted"
-		        incr j
+		        incr n_unmapped
                 incr case1
 				continue
 			}
-	    }
 
-		set svtype [normalizeSVtype $alt]
+            regsub "(^END|;END)=(\[^;\]+)(;|$)" $infos "\\1=$theNewEND\\3" infos
+	    }
 
 
 		# Lift over INFO/SVLEN, INFO/SVSIZE
@@ -367,13 +497,13 @@ proc writeTheLiftedVCF {} {
 		append theNewL "\t$infos\t[join [lrange $Ls 8 end] "\t"]"
 
 		lappend L_toWrite $theNewL
-		incr i
+		incr n_mapped
 
-	    if {![expr {$i%10000}]} {
+	    if {![expr {$n_mapped%10000}]} {
 	        WriteTextInFile [join $L_toWrite "\n"] $g_liftoverSV(OUTPUTFILE)
 	        set L_toWrite {}
 	    }
-        if {![expr {$j%10000}]} {
+        if {$n_unmapped ne 0 && ![expr {$n_unmapped%10000}]} {
             WriteTextInFile [join $L_unmappedToWrite "\n"] $unmappedFile
             set L_unmappedToWrite {}
         }
@@ -388,14 +518,17 @@ proc writeTheLiftedVCF {} {
     if {$L_unmappedToWrite ne ""} {
 		WriteTextInFile [join $L_unmappedToWrite "\n"] $unmappedFile
 	}
-	puts "\t- $i mapped SV"
+	puts "\t* $n_mapped mapped SV"
 
-	puts "\n...unmapped SV (see [file tail $unmappedFile] for details):"
-	puts "\t- $case1 SV with one position (start or end) lifted while the other doesn't"
-	puts "\t- $case2 SV with one position (start or end) mapped to a different chrom from the other"
-	puts "\t- $case3 SV with \"lifted start\" > \"lifted end\""
-	puts "\t- $case4 SV with the distance between the two lifted positions that changes significantly (difference between both SVLENs > 5%)"
-
+	if {$n_unmapped ne 0} {
+		puts "\n...unmapped SV (see [file tail $unmappedFile] for details):"
+		puts "\t* $n_unmapped unmapped SV"
+		if {$case1} {puts "\t- $case1 SV with one position (start or end) lifted while the other doesn't"}
+		if {$case2} {puts "\t- $case2 SV with one position (start or end) mapped to a different chrom from the other"}
+		if {$case3} {puts "\t- $case3 SV with \"lifted start\" > \"lifted end\""}
+		if {$case4} {puts "\t- $case4 SV with the distance between the two lifted positions that changes significantly (difference between both SVLENs > 5%)"}
+		if {$case5} {puts "\t- $case5 SV with an ALT feature that is not a square/angle bracketed notation."}
+	}
 
 	# Add new header lines (only for INFO or FORMAT) if needed
 	foreach val $L_SVlines_INFO {
@@ -540,7 +673,7 @@ proc sortTheLiftedVCF {} {
 			puts $Message
 		} else {
 			puts "\n...sort and compress [file tail $g_liftoverSV(OUTPUTFILE)] ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
-			puts "\tcreation of [file tail $sortedOUTPUTFILE]"
+			puts "\t* creation of [file tail $sortedOUTPUTFILE]"
 			if {[file exists $sortedOUTPUTFILE]} {
 				file delete -force $g_liftoverSV(OUTPUTFILE)
 			}

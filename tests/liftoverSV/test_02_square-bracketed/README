@@ -1,0 +1,4 @@
+$LIFTOVERSV/bin/liftoverSV -I ./input_severalSVTYPE-square-bracketed.vcf -O ./output_hg38.vcf -C hg19ToHg38.over.chain --REFFASTASEQ /PUBLIC_DATA/ReferenceGenomes/UCSChg38/hg38.fa
+
+
+

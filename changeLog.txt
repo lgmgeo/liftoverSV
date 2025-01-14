@@ -23,6 +23,8 @@ For more details, please see the README file.
 
 
 Jan, , 2025, liftoverSV version 0.1.3_beta
+	- Lift over REF and ALT (sequences + coordinates)
+	- Check if the VCF input file contains multi-allelic lines (not allowed)
 	- Check/Update INFO/CIPOS and INFO/CIEND
 	- Update/create and sort some VCF header lines
 	    - Checks that the "contig" field includes all the ID attributes (do not include additional optional attributes)</br>

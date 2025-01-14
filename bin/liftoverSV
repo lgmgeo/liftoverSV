@@ -3,7 +3,7 @@
 ############################################################################################################
 # liftoverSV 0.1.2_beta                                                                                    #
 #                                                                                                          #
-# Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
+# Copyright (C) 2025-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
 # This program is free software; you can redistribute it and/or                                            #
 # modify it under the terms of the GNU General Public License                                              #
@@ -19,22 +19,21 @@
 # along with this program; If not, see <http://www.gnu.org/licenses/>.                                     #
 ############################################################################################################
 
-# TO BE IMPROVED
-################
-#
+
 # WARNING 1:
-# Script to use with symbolic SVs (e.g. <DEL>) (not square-bracketed ALT, because genomic coordinates and sequences are not lifted)
-#
+############
+# Script to use with "ALT" formated as:
+# - symbolic SVs (e.g. <DEL>) 
+# - square-bracketed ALT (e.g. G]chr17:349191])
+
 # WARNING 2:
+############
 # Pay attention to the genomic coordinates indicated in the VCF “INFO” field:
 # => Only END, SVEND, SVLEN, SVSIZE are lifted
 # => The other genomic coordinates are not modified:
-#    - Square-bracketed ALT values (e.g. ATTGC]17:1563254]) are not lifted
-#    - INFO/CIPOS and INFO/CIEND are not checked. We should have:
-#       => POS-CIPOS > 0
-#       => END+CIEND < chrom_length
 #    - INFO/MEINFO and INFO/METRANS are not lifted
 #    - INFO/HOMLEN and INFO/HOMSEQ are not lifted
+
 
 global g_liftoverSV
 
@@ -137,8 +136,16 @@ puts "\t*********************************************"
 
 
 
-#set seq [ExtractDNAseq 1 999888 999999 /PROGS/EXTERN/AnnotSV/AnnotSV_latest/share/AnnotSV/Annotations_Human/BreakpointsAnnotations/GCcontent/GRCh38/GRCh38_chromFa.fasta]
-#puts $seq
+
+# Check if the input VCF file contains multi-allelic lines
+##########################################################
+isMultiAllelic
+
+
+# Check if the FASTA REF FILE seems correct (with or without "chr"
+##################################################################
+checkREFFASTASEQ
+
 
 # Memorize the size of the chromosomes in the query build 
 #########################################################

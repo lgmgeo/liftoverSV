@@ -1,7 +1,7 @@
 <p align="center">
 <div align="center">
     <h1 style="font-weight: bold">liftoverSV:
-      <h3>Lifts over a Structural Variation VCF file from one reference build to a query build</h3>
+      <h3>Lifts over a Structural Variation VCF file from one reference build to a target build</h3>
     </h1>
 </div>
 
@@ -31,7 +31,9 @@
 --help,-h <Boolean>           Display the help message
                               Default value: false. Possible values: {true, false}
 
---INPUTFILE,-I <File>         The SV VCF input file
+--INPUTFILE,-I <File>         The SV VCF input file.
+                              Gzipped VCF file is supported.
+                              Multi-allelic lines are not allowed
                               Required
 
 --LIFTOVER,-L <File>          The UCSC Liftover tool path
@@ -52,27 +54,31 @@ Please cite the following doi if you are using this tool in your research:</br>
 
 ## liftoverSV: 
 
-Lifts over a SV VCF file from one reference build to another:
+Lifts over a SV VCF file from one reference build to a target build:
 
-* Lifts over #CHROM and POS
-
-* Lifts over INFO/END and INFO/SVEND</br>
+* Lifts over #CHROM, POS, REF, ALT, INFO/END and INFO/SVEND</br>
+   (chromosomes, coordinates and sequences are lifted)
 
 * Lifts over INFO/SVLEN, INFO/SVSIZE:
    - Lifts over for deletion, duplication and inversion (SVLEN_lifted = End_lifted - Start_Lifted)
    - Keep the same SVLEN/SVSIZE for insertion (the number of the inserted bases remains the same)
    - Set SVLEN/SVSIZE to "." for SV type not equal to DEL, DUP, INV or INS (TRA, CPX...)
 
-* Drop the SV if:</br>
-   - Case1: one position (start or end) is lifted while the other doesn't
-   - Case2: one position (start or end) goes to a different chrom from the other
+* Drop the SV if:
+   - Case1: One position (start or end) is lifted while the other doesn't
+   - Case2: One position (start or end) goes to a different chrom from the other (except for translocation)
    - Case3: "lifted start" > "lifted end"
-   - Case4: the distance between the two lifted positions changes significantly (Default: difference between both SVLENs > 5%)
-	(see "OUTPUTFILE.unmapped" file for details)
+   - Case4: The distance between the two lifted positions changes significantly (Default: difference between both SVLENs > 5%)</br>
+   - Case5: The ALT feature is not a square or an angle bracketed notation.</br>
+     Square-bracketed notation examples: `A]chr2:32156]` or `ACCCCC[chr2:32156[` </br>
+     Angle-bracketed notation examples: `<INS>` or `<CN0>`</br>
+     Non authorized format example: `REF="A" and ALT="ACGGTAG"`</br>
 
-* Check/Update INFO/CIPOS and INFO/CIEND, so that in the query build:
+   => See "OUTPUTFILE.unmapped" file for details
+
+* Check/Update INFO/CIPOS and INFO/CIEND, so that in the target build:
    - POS-CIPOS >= 1 (VCF coordinates are 1-based)</br>
-   - END+CIEND <= chromosome length</br>
+   - END+CIEND <= chromosome length
 
 * Update/create and sort some VCF header lines:
 	- Checks that the "contig" field includes all the ID attributes (do not include additional optional attributes)</br>
@@ -88,12 +94,12 @@ Lifts over a SV VCF file from one reference build to another:
 
 ## Requirements
 ### a) The UCSC Liftover tool (required)
-The UCSC Liftover tool needs to be locally installed.</br>
+The UCSC Liftover tool needs to be locally installed to lift over chrom/positions</br>
 https://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/liftOver
-### b) bcftools
+### b) bedtools (to be required in future development)
+The “bedtools” toolset needs to be locally installed to lift over sequences (e.g. ACGGTTG]chr1:12569863])
+### c) bcftools
 The “bcftools” toolset needs to be locally installed to sort the VCF output file
-### c) bedtools (to be required in future development)
-The “bedtools” toolset will need to be locally installed to lift over sequences (e.g. ACGGTTG]chr1:12569863])
 
 ## SV VCF format: Documentation
 cf https://samtools.github.io/hts-specs/VCFv4.4.pdf</br>
