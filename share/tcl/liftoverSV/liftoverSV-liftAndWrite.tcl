@@ -18,7 +18,7 @@
 ############################################################################################################
 
 
-# Extract the different genomic coordinates from the input VCF
+# Extract the different genomic coordinates from the input VCF (1-based) to create a BED file (0-based)
 proc extractAllTheGenomicCoordinates {} {
 
 	global g_liftoverSV
@@ -26,10 +26,10 @@ proc extractAllTheGenomicCoordinates {} {
 
 	puts "\n...reading [file tail $g_liftoverSV(INPUTFILE)] ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
 	set tmpBEDfile "./[clock format [clock seconds] -format "%Y%m%d-%H%M%S"].tmp.bed"
-	puts "\t* creation of $tmpBEDfile"
 
 	set L_toWrite {}
 	set i 0
+	set nSV 0
 
 	if {[regexp ".gz$" $g_liftoverSV(INPUTFILE)]} {
 	    set F [open "|gzip -cd $g_liftoverSV(INPUTFILE)"]
@@ -42,36 +42,78 @@ proc extractAllTheGenomicCoordinates {} {
 		set Ls [split $L "\t"]
 
 	    set chrom [lindex $Ls 0]
-	    set start [lindex $Ls 1]
+	    set VCFstart [lindex $Ls 1]
+        set BEDstart [expr {$VCFstart-1}] ;# 1-based => 0-based
+        set ref [lindex $Ls 3]
 		set alt [lindex $Ls 4]
 		set infos [lindex $Ls 7]
 
-	    lappend L_toWrite "$chrom\t$start\t[expr {$start+1}]\t$i"
-		incr i
+		incr nSV 
+
+		# POS
+        if {![info exists localMemory($chrom,$BEDstart)]} {
+			set localMemory($chrom,$BEDstart) 1
+			lappend L_toWrite "$chrom\t$BEDstart\t$VCFstart\t$i"
+			incr i
+		}
+
+		# Coordinates of the last NT in the REF
+        regsub -all "\[*.\]" $ref "" refbis
+		set REFlength [string length $refbis]
+		set lastNTfromREF [expr {$BEDstart+$REFlength-1}]
+        if {![info exists localMemory($chrom,$lastNTfromREF)]} {
+            set localMemory($chrom,$lastNTfromREF) 1
+	        lappend L_toWrite "$chrom\t$lastNTfromREF\t[expr {$lastNTfromREF+1}]\t$i"
+            incr i
+        }
+
+		# For a deletion indicated in REF/ALT with a sequence notation (e.g. ATGCCC > ATG)
+		# => coordinates of the last NT before the deletion (in our example, coordinates of the "G")
+        if {[regexp "^\[acgtnACGTN.*\]+$" $ref$alt]} {
+            regsub -all "\[*.\]" $alt "" altbis
+            set REFlength [string length $refbis]
+            set ALTlength [string length $altbis]
+
+            if {![regexp "^N+$" $ref] && $ref ne "." && ![regexp "^N+$" $alt] && $alt ne "." } {
+                # REF and ALT are different of "." and not composed only of "N"
+                if {$REFlength > $ALTlength} {
+                    # Deletion
+                    if {[regsub -nocase "^$alt" $ref "" deletion]} {
+						set lastNTbeforeDeletion [expr {$BEDstart+$REFlength-[string length $deletion]-1}]
+				        if {![info exists localMemory($chrom,$lastNTbeforeDeletion)]} {
+							set localMemory($chrom,$lastNTbeforeDeletion) 1
+							lappend L_toWrite "$chrom\t$lastNTbeforeDeletion\t[expr {$lastNTbeforeDeletion+1}]\t$i"
+							incr i
+						}
+					}
+				}
+			}
+		}
 
 		# INFO/END
 	    if {[regexp "(^END|;END)=(\[^;\]+)(;|$)" $infos match tutu end titi]} {
-			if {![info exists localMemory($chrom,$end)]} {
-				set localMemory($chrom,$end) 1
-				lappend L_toWrite "$chrom\t$end\t[expr {$end+1}]\t$i"
+			if {![info exists localMemory($chrom,[expr {$end-1}])]} {
+				set localMemory($chrom,[expr {$end-1}]) 1
+				lappend L_toWrite "$chrom\t[expr {$end-1}]\t$end\t$i"
 				incr i
 			}
 		}
 
 		# INFO/SVEND
 		if {[regexp "(^SVEND|;SVEND)=(\[^;\]+)(;|$)" $infos match tutu svend titi]} {
-            if {![info exists localMemory($chrom,$svend)]} {
-                set localMemory($chrom,$svend) 1
-				lappend L_toWrite "$chrom\t$svend\t[expr {$svend+1}]\t$i"
+            if {![info exists localMemory($chrom,[expr {$svend-1}])]} {
+                set localMemory($chrom,[expr {$svend-1}]) 1
+				lappend L_toWrite "$chrom\t[expr {$svend-1}]\t$svend\t$i"
 				incr i
 			}
 		}
 
 		# Square-bracketed ALT notation
-		if {[regexp "(\\\[|\\\])(\[chr0-9\]+):(\[0-9\]+)(\\\[|\\\])" $alt match tutu chromALT posALT]} {
-			if {![info exists localMemory($chromALT,$posALT)]} {
-                set localMemory($chromALT,$posALT) 1
-				lappend L_toWrite "$chromALT\t$posALT\t[expr {$posALT+1}]\t$i"
+		if {[regexp "(\\\[|\\\])(\[chr0-9\]+):(\[0-9\]+)(\\\[|\\\])" $alt match tutu chromALT VCFposALT]} {
+			set BEDposALT [expr {$VCFposALT-1}]
+			if {![info exists localMemory($chromALT,$BEDposALT)]} {
+                set localMemory($chromALT,$BEDposALT) 1
+				lappend L_toWrite "$chromALT\t$BEDposALT\t$VCFposALT\t$i"
 				incr i
 			}
         }
@@ -83,6 +125,8 @@ proc extractAllTheGenomicCoordinates {} {
 		}
 	}
 	close $F
+    puts "\t* $nSV SV given in input"
+    puts "\t* creation of $tmpBEDfile with the different coordinates to lift (CHROM:POS, CHROM:END...)"
 	WriteTextInFile [join $L_toWrite "\n"] $tmpBEDfile
 	
 	return $tmpBEDfile
@@ -90,7 +134,7 @@ proc extractAllTheGenomicCoordinates {} {
 
 
 
-# Liftover these different genomic coordinates
+# Lift over these different genomic coordinates
 proc liftoverGenomicCoordinates {tmpBEDfile} {
 
     global g_liftoverSV
@@ -103,15 +147,16 @@ proc liftoverGenomicCoordinates {tmpBEDfile} {
 
 	regsub ".bed" $tmpBEDfile ".lifted.bed" tmpBEDfileLifted
 	set command "$g_liftoverSV(LIFTOVER) $tmpBEDfile $g_liftoverSV(CHAIN) $tmpBEDfileLifted unMapped"
-	puts "\t* Command line:"
-	puts "\t\t$command"
 
 	if {[catch {eval exec $command} Message]} {
+	    puts "\t* Command line:"
+	    puts "\t\t$command"
 		puts "\t* Output:"
 		foreach L [split $Message "\n"] {
 			puts "\t\t$L"
 		}
 	}
+
 
 	file delete -force unMapped
 	return $tmpBEDfileLifted
@@ -119,7 +164,8 @@ proc liftoverGenomicCoordinates {tmpBEDfile} {
 
 
 
-# Memorize the lifted coordinates
+# Memorize the lifted coordinate:s
+# Read from a BED file (0-based) and memorize in a VCF format (1-based)
 proc memorizeGenomicCoordinates {tmpBEDfile tmpBEDfileLifted} {
 
     global g_liftoverSV
@@ -128,19 +174,21 @@ proc memorizeGenomicCoordinates {tmpBEDfile tmpBEDfileLifted} {
 	global g_L_chrom
 
 	puts "\n...memorizing the lifted coordinates ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
-    set g_L_chrom(notLifted) {}
+
+    set g_L_chrom(beforeLifted) {}
 	set F [open "$tmpBEDfile"]
 	while {[gets $F L]>=0} {
 	    set Ls [split $L "\t"]
 		set chrom [lindex $Ls 0]
-		set pos [lindex $Ls 1]
+
+		set BEDpos [lindex $Ls 1]
+        set VCFpos [expr {$BEDpos+1}]
 	    set id [lindex $Ls end]
-	    set g_ID($chrom,$pos) $id
-        if {[lsearch -exac $g_L_chrom(notLifted) $chrom] eq -1} {
-            lappend g_L_chrom(notLifted) $chrom
+	    set g_ID($chrom,$VCFpos) $id
+        if {[lsearch -exac $g_L_chrom(beforeLifted) $chrom] eq -1} {
+            lappend g_L_chrom(beforeLifted) $chrom
         }
 	}
-	file delete -force $tmpBEDfile
 
 	set g_L_chrom(lifted) {}
 	set F [open "$tmpBEDfileLifted"]
@@ -148,8 +196,9 @@ proc memorizeGenomicCoordinates {tmpBEDfile tmpBEDfileLifted} {
 	    set Ls [split $L "\t"]
 		set id [lindex $Ls end]
         set chrom [lindex $Ls 0]
-        set pos [lindex $Ls 1]
-		set g_liftedCoord($id) "$chrom,$pos"
+        set BEDpos [lindex $Ls 1]
+        set VCFpos [expr {$BEDpos+1}]
+		set g_liftedCoord($id) "$chrom,$VCFpos"
 		if {[lsearch -exac $g_L_chrom(lifted) $chrom] eq -1} {
 			lappend g_L_chrom(lifted) $chrom
 		}
@@ -161,13 +210,17 @@ proc memorizeGenomicCoordinates {tmpBEDfile tmpBEDfileLifted} {
 
 
 # Write the lifted VCF
+######################
 # Rules:
-# => lift the CHROM, the END/SVEND and the REF/ALT of the SV.
+# => lift #CHROM, POS, REF, ALT, INFO/END and INFO/SVEND
 # => drop the SV if:
 #   - Case1: one position (start or end) is lifted while the other doesn't
-#   - Case2: one position (start or end) goes to a different chrom from the other
+#   - Case2: one position (start or end) goes to a different chrom from the other (except for translocation)
 #   - Case3: "lifted start" > "lifted end"
-#   - Case4: the distance between the two lifted positions changes significantly (difference between both SVLENs > 5%)
+#   - Case4: The distance between the two lifted positions changes significantly (Default: difference between both SVLENs > 5%)
+#   - Case5: The REF and ALT features are represented with complex sequences:
+#		- Deletion: the REF sequence is not at the beginning of the ALT sequence e.g. `REF="ATTCTTG" and ALT="TC"
+#		- Insertion: the ALT sequence is not at the beginning of the REF sequence e.g. `REF="TC" and ALT="ATTCTTG" 
 
 # Source:
 #########
@@ -242,7 +295,7 @@ proc writeTheLiftedVCF {} {
 	} else {
 		set F [open "$g_liftoverSV(INPUTFILE)"]
 	}
-	set testContigs 1
+	set testContigs "toDo"
 	while {[gets $F L]>=0} {
 
 		# VCF header lines
@@ -251,17 +304,17 @@ proc writeTheLiftedVCF {} {
 			if {[regexp "^##contig=<ID=" $L]} {
 				##contig=<ID=chr1,length=249250621>
 				regsub ",length=\[0-9\]+" $L "" L
-				set testContigs 2
+				set testContigs "inProgress"
 				lappend L_toWrite "$L"
 				continue
 			}
-			if {$testContigs eq 2} {
+			if {$testContigs eq "inProgress"} {
 				foreach chrom [lsort $g_L_chrom(lifted)] {
-					if {[lsearch -exact $g_L_chrom(notLifted) $chrom] ne -1} {
+					if {[lsearch -exact $g_L_chrom(beforeLifted) $chrom] ne -1} {
 						lappend L_toWrite "##contig=<ID=$chrom>"
 					}
 				}
-				set testContigs 0
+				set testContigs "done"
 			}
             lappend L_toWrite "$L"
 
@@ -289,22 +342,139 @@ proc writeTheLiftedVCF {} {
 		set qual [lindex $Ls 5]
 		set filter [lindex $Ls 6]
 		set infos [lindex $Ls 7]
+        set format_annot [lindex $Ls 8]
 
         set svtype [normalizeSVtype $chrom $start $ref $alt]
-
 		# Drop SV if the SVTYPE is not DUP, DEL, INV, INS or TRA
 		# if {$svtype eq "None"} {continue}
 		# ...A voir si nécessaire
 
-		# Drop SV without a square or an angle bracketed notation.
-        # ref="G" and alt="ACTGCTAACGATCCGTTTGCTGCTAACGATCTAACGATCGGGATTGCTAACGATCTCGGG"
-		# Case5
-        if {[regexp -nocase "^\[acgtnACGTN.*\]+$" $ref$alt]} {
-            lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tnot a square or angle bracketed notation for the ALT feature."
-			incr n_unmapped 
-			incr case5
+
+		# Lift over POS
+        set theID $g_ID($chrom,$start)
+        if {[info exists g_liftedCoord($theID)]} {
+            set theNewChrom [lindex [split $g_liftedCoord($theID) ","] 0]
+            set theNewStart [lindex [split $g_liftedCoord($theID) ","] 1]
+        } else {
+            # Case1
+            lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tStart ($chrom,$start) not lifted"
+            incr n_unmapped
+            incr case1
             continue
         }
+
+		#######################################
+		# Lift over REF and ALT:
+		# - square-bracketed notation
+		# - angle-bracketed notation
+		# - sequence notation
+		#######################################
+
+		# Case5: The REF and ALT features are represented with complex sequences:
+		#   - Deletion: the REF sequence is not at the beginning of the ALT sequence e.g. `REF="ATTCTTG" and ALT="TC"
+		#   - Insertion: the ALT sequence is not at the beginning of the REF sequence e.g. `REF="TC" and ALT="ATTCTTG"
+		# => Drop SV with a complex sequence notation in REF/ALT
+
+		# REF and ALT are represented with a sequence notation
+		#
+		# VCF format: The REF and ALT Strings must include the base before the variant (which must be reflected in the POS field), unless the variant occurs
+		#             at position 1 on the contig in which case it must include the base after the variant
+        if {[regexp "^\[acgtnACGTN.*\]+$" $ref$alt]} {
+
+			# => sequence notation
+			######################
+
+            regsub -all "\[*.\]" $ref "" refbis
+            regsub -all "\[*.\]" $alt "" altbis
+            set REFlength [string length $refbis]
+            set ALTlength [string length $altbis]
+
+			# Coordinates of the last NT in the REF
+			set lastNTfromREF [expr {$start+$REFlength-1}]
+			set theID $g_ID($chrom,$lastNTfromREF)
+            set theNewlastNTfromREF [lindex [split $g_liftedCoord($theID) ","] 1]
+
+
+            if {[regexp "^N+$" $ref] || $ref eq "."} {
+	            # REF is composed only of "N" or REF = "."
+                set theNewREF $ref  
+                set theNewALT $alt
+            } elseif {[regexp "^N+$" $alt] || $alt eq "."} {
+	            # ALT is composed only of "N" or ALT = "."
+                set theNewALT $alt
+                set theNewREFtmp [ExtractDNAseq $theNewChrom $theNewStart $theNewlastNTfromREF]
+                regsub "\[^.*\]+" $ref "$theNewREFtmp" theNewREF ;# We keep the "." or "*" information (just in case, it should not be observed in REF, should only be observed in ALT)
+            } else {
+				# REF and ALT are different of "." and not composed only of "N"
+				if {$REFlength < $ALTlength} {
+					# Insertion
+					if {[regsub -nocase "^$ref" $alt "" insertion]} {
+						set theNewREFtmp [ExtractDNAseq $theNewChrom $theNewStart $theNewlastNTfromREF]
+						regsub "\[^.*\]+" $ref "$theNewREFtmp" theNewREF
+						set theNewALT "$theNewREF$insertion"
+					} else {
+					    lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tcomplex sequence notation (see REF and ALT)"
+                        incr n_unmapped
+                        incr case5
+                        continue
+					} 
+				} elseif {$REFlength > $ALTlength} {
+					# Deletion
+			        if {[regsub -nocase "^$alt" $ref "" deletion]} {
+                        set lastNTbeforeDeletion [expr {$start+$REFlength-[string length $deletion]-1}]
+						set theID $g_ID($chrom,$lastNTbeforeDeletion)
+						set theNewlastNTbeforeDeletion [lindex [split $g_liftedCoord($theID) ","] 1]
+                        set theNewALTtmp [ExtractDNAseq $theNewChrom $theNewStart $theNewlastNTbeforeDeletion]
+                        regsub "\[^.*\]+" $alt "$theNewALTtmp" theNewALT
+                        set theNewREF "$theNewALT$deletion"
+					} else {
+			            lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tcomplex sequence notation (see REF and ALT)"
+			            incr n_unmapped
+			            incr case5
+			            continue
+			        }
+				} else {
+					if {".$ref" eq $alt} {
+						# Single breakend (e.g. REF = A and ALT = .A)
+                        set theNewREF [ExtractDNAseq $theNewChrom $theNewStart $theNewlastNTfromREF]
+						set theNewALT ".$theNewREF"
+					} elseif {"$ref." eq $alt} {
+						# Single breakend (e.g. REF = G and ALT = G.)	
+			            set theNewREF [ExtractDNAseq $theNewChrom $theNewStart $theNewlastNTfromREF]
+                        set theNewALT "$theNewREF."
+					} else {
+						# Complex sequence notation or substitution
+						lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tcomplex sequence notation (see REF and ALT)"
+	                    incr n_unmapped
+	                    incr case5
+	                    continue		
+					}
+				}
+			}
+		} else {
+
+	        # => square-bracketed and/or angle-bracketed ALT notation
+			#########################################################
+
+	        # Do not lift over ALT (e.g. REF=A and ALT=<DEL>)
+			set theNewALT $alt   ;# Will be erased after for square-bracketed ALT notation
+
+            # Lift over the sequence in REF (e.g. REF=A and ALT=<DEL>)
+	        if {[regexp "^N+$" $ref]} {
+	            set theNewREF $ref       ;# REF is composed only of "N"
+	        } elseif {$ref eq "."} {
+	            set theNewREF "."        ;# REF = "."
+	        } else {
+                # Coordinates of the last NT in the REF
+	            regsub -all "\[*.\]" $ref "" refbis
+				set REFlength [string length $refbis]
+				set lastNTfromREF [expr {$start+$REFlength-1}]
+				set theID $g_ID($chrom,$lastNTfromREF)
+				set theNewlastNTfromREF [lindex [split $g_liftedCoord($theID) ","] 1]
+				set theNewREF [ExtractDNAseq $theNewChrom $theNewStart $theNewlastNTfromREF]
+	        }
+		}
+
 
 		# Memorize all the INFO annotations presents in the SV lines
 		regsub -all "=\[^;\]+" $infos "" infosToCheck
@@ -312,38 +482,10 @@ proc writeTheLiftedVCF {} {
 		set L_SVlines_INFO [lsort -unique $L_SVlines_INFO]
 
         # Memorize all the FORMAT annotations presents in the SV lines
-        set format_annot [lindex $Ls 8]
         lappend L_SVlines_FORMAT {*}[split $format_annot ";"]
-        set L_SVlines_FORMAT [lsort -unique $L_SVlines_FORMAT]
 
 
-		set theID $g_ID($chrom,$start)
-		if {[info exists g_liftedCoord($theID)]} {
-			set theNewChrom [lindex [split $g_liftedCoord($theID) ","] 0]
-			set theNewStart [lindex [split $g_liftedCoord($theID) ","] 1]
-		} else {
-			# Case1
-		    lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tStart ($chrom,$start) not lifted"
-			incr n_unmapped
-			incr case1
-		    continue
-		}
-	
-
-		# Lift of the sequence in REF
-        if {[regexp "^N+$" $ref]} {
-			set theNewRef $ref       ;# REF is composed only of "N"
-		} elseif {$ref eq "."} {
-            set theNewRef "."        ;# REF = "."
-		} else {
-            regsub -all "\[*.\]" $ref "" refbis
-	        set REFlength [string length $refbis] ;# REF = "A" or "CTTGA" or ...
-			set theNewRef [ExtractDNAseq $theNewChrom [expr {$theNewStart-1}] [expr {$theNewStart+$REFlength-1}]]
-		}
-
-
-		# Lift of the square-bracketed ALT 
-		set theNewALT $alt
+		# Lift over the square-bracketed ALT 
         if {[regexp "(\[acgtnACGTN\]*)(\\\[|\\\])(\[^:\]+):(\[0-9\]+)(\\\[|\\\])(\[acgtnACGTN\]*)" $alt match baseLeft bracketLeft chromALT posALT bracketRight baseRight]} {
 			set theIDalt $g_ID($chromALT,$posALT)
 	        if {[info exists g_liftedCoord($theIDalt)]} {
@@ -392,15 +534,15 @@ proc writeTheLiftedVCF {} {
 
 			# Lift the sequence in the square-bracketed ALT
 			# Examples:
-			# A]chr2:32156] => "A" = $theNewRef
-			# [chr2:32156[A => "A" = $theNewRef
+			# A]chr2:32156] => "A" = $theNewREF
+			# [chr2:32156[A => "A" = $theNewREF
 			# INS:
 			# ACCCCC[chr2:32156[ => chr2:32156 is "A" (first NT before the inserted sequence)
 			# ]chr2:32156]CCCCCA => chr2:32156 is "A"(last NT after the inserted sequence)
 			if {$baseLeft ne "" && $baseRight eq ""} {
-				set theNewALT "$theNewRef[string range $baseLeft 1 end]$bracketLeft$theNewChromALT:$theNewPosALT$bracketRight"
+				set theNewALT "$theNewREF[string range $baseLeft 1 end]$bracketLeft$theNewChromALT:$theNewPosALT$bracketRight"
 			} elseif {$baseRight ne "" && $baseLeft eq ""} {
-				set theNewALT "$bracketLeft$theNewChromALT:$theNewPosALT$bracketRight[string range $baseRight 0 end-1]$theNewRef"
+				set theNewALT "$bracketLeft$theNewChromALT:$theNewPosALT$bracketRight[string range $baseRight 0 end-1]$theNewREF"
 			} else {
 				lappend L_unmappedToWrite "[join [lrange $Ls 0 7] "\t"]\tthe ALT features ($alt) is badly formatted."
 				incr n_unmapped
@@ -411,9 +553,11 @@ proc writeTheLiftedVCF {} {
 
 
 		# Memorize the 6 first columns lifted
-		set theNewL "$theNewChrom\t$theNewStart\t$ID\t$theNewRef\t$theNewALT\t$qual\t$filter"
+		set theNewL "$theNewChrom\t$theNewStart\t$ID\t$theNewREF\t$theNewALT\t$qual\t$filter"
 
 
+		# Lift over END/SVEND
+		#####################
 		set end "-10"
 	    if {[regexp "(^END|;END|^SVEND|;SVEND)=(\[^;\]+)(;|$)" $infos match tutu end titi]} {
 			set theID $g_ID($chrom,$end)

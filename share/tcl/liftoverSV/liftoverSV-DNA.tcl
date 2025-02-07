@@ -87,13 +87,21 @@ proc checkREFFASTASEQ {} {
 }
 
 
-# The "N" in the REF/ALT fetures will be replaced with the correct nucleotides if FastaFile is provided.
-# 
-# Extract DNA sequences into a fasta file based on feature coordinates
+# Extract DNA sequences from genomic coordinates
+################################################
+# Input = 1-based coordinates (VCF)
+#
+# Equivalence between BED and VCF coordinates:
+#          VCF [start, end]
+#          BED [start-1, end)
+#
 # Return:
 # - the sequence
 # - "" in case of error
-proc ExtractDNAseq {chrom start end} {
+# 
+# Example: VCFchrom=chr22 VCFstart=16848506 VCFend=16848506 
+#		   => G
+proc ExtractDNAseq {VCFchrom VCFstart VCFend} {
  
 	global g_liftoverSV
 
@@ -106,27 +114,18 @@ proc ExtractDNAseq {chrom start end} {
 	#          -fo			Output file (can be FASTA or TAB-delimited)
 
 	set outputSeq ""
-	set tmpCoordFile "./[clock format [clock seconds] -format "%Y%m%d-%H%M%S"].tmp.coord.bed"
-	WriteTextInFile "$chrom\t$start\t$end" $tmpCoordFile 
-
-	set tmpOutputFile "./[clock format [clock seconds] -format "%Y%m%d-%H%M%S"].tmp.coord.fasta"
-
-	set command "$g_liftoverSV(BEDTOOLS) getfasta -fi $g_liftoverSV(REFFASTASEQ) -bed $tmpCoordFile -fo $tmpOutputFile"
+	set BEDstart [expr {$VCFstart-1}]
+	set command "echo -e \"$VCFchrom\t$BEDstart\t$VCFend\" | bedtools getfasta -fi $g_liftoverSV(REFFASTASEQ) -bed -"
 	if {[catch {eval exec $command} Message]} {
 		puts $command
 		puts $Message
 	} else {
-	    set f [open $tmpOutputFile]
-	    while {![eof $f]} {
-	        set L [gets $f]
+		foreach L [split $Message "\n"] {
 			if {[regexp "^>" $L]} {continue}
 			if {$L eq ""} {continue}
 			append outputSeq $L
 		}
-		close $f
 	}
-	file delete -force $tmpCoordFile
-	file delete -force $tmpOutputFile
 
 	return $outputSeq
 }

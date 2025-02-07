@@ -90,7 +90,7 @@ if {![info exists g_liftoverSV(Version)]} {
     set g_liftoverSV(Version) "X.X"
 }
 
-puts "\nliftoverSV $g_liftoverSV(Version)\n"
+puts "\nliftoverSV $g_liftoverSV(Version)"
 
 if {[regexp "\-version|\-Version" $argv]} {
     exit
@@ -98,17 +98,22 @@ if {[regexp "\-version|\-Version" $argv]} {
 
 
 
+# Help asked?
+#############
+if {[regexp -nocase "(-h$)|(--help)" $argv] || $argv eq ""} {
+    showHelp; exit 0
+}
+
+
+
 # DISPLAY
 #########
-puts ""
 puts "Copyright (C) 2024-current GEOFFROY Veronique"
-puts ""
 puts "Please feel free to create a Github issue for any suggestions or bug reports (https://github.com/lgmgeo/liftoverSV/issues)"
-puts ""
-puts "Tcl/Tk version: $tclVersion"
+puts "\nTcl/Tk version: $tclVersion"
 puts ""
 puts "Application name used:"
-puts "$g_liftoverSV(installDir)\n\n"
+puts "$g_liftoverSV(installDir)\n"
 
 
 

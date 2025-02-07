@@ -21,7 +21,7 @@ proc configureLiftoverSV {argv} {
 
     global g_liftoverSV
 
-    puts "...loading configuration data ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
+    puts "\n...loading configuration data ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
 
 
     #######################
@@ -62,13 +62,14 @@ proc configureLiftoverSV {argv} {
                 set optionName PERCENT
             } elseif {$optionName eq "R"} {
                 set optionName REFFASTASEQ
-            } elseif {$optionName eq "h" || $optionName eq "help"} {
-				showHelp; exit 0
 			} 
             set g_liftoverSV($optionName) $optionValue
         } else {
+			puts "\n############################################################################"
             puts "\"$optionName\" option not known."
             puts "For more information on the arguments, please use the --help option"
+            puts "############################################################################\n"
+
             exit 2
         }
         incr i 2
@@ -78,52 +79,63 @@ proc configureLiftoverSV {argv} {
     ########################################
     ## Checking of the configuration options
     ########################################
-    puts "...checking configuration data ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
+    puts "\n...checking configuration data ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
 
     ## INPUTFILE: We should have a VCF input file
     if {$g_liftoverSV(INPUTFILE) eq ""} {
-        puts "LiftoverSV needs in argument the path of your SV VCF input file (--INPUTFILE ...) - Exit with error."
+        puts "\n############################################################################"
+        puts "liftoverSV needs in argument the path of your SV VCF input file (--INPUTFILE ...)"
+		puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     }
     if {![regexp -nocase "\\.(vcf(.gz)?)$" $g_liftoverSV(INPUTFILE)]} {
-        puts "############################################################################"
+        puts "\n############################################################################"
         puts "Bad option value: --INPUTFILE = $g_liftoverSV(INPUTFILE)"
-        puts "Extension file should be \".vcf\" - Exit with error."
-        puts "############################################################################"
+        puts "Extension file should be \".vcf\""
+		puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     }
     ## INPUTFILE: It must be an existing file
     if {![file exists $g_liftoverSV(INPUTFILE)]} {
-        puts "############################################################################"
-        puts "Bad value for the --INPUTFILE option, file does not exist ($g_liftoverSV(INPUTFILE)) - Exit with error."
-        puts "############################################################################"
+        puts "\n############################################################################"
+        puts "Bad value for the --INPUTFILE option, file does not exist ($g_liftoverSV(INPUTFILE))" 
+		puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     }
     ## INPUTFILE: no SV to lift if it is an empty file
     if {[isAnEmptyFile $g_liftoverSV(INPUTFILE)]} {
-        puts "############################################################################"
-        puts "INPUTFILE ($g_liftoverSV(INPUTFILE) is empty, no SV to lift - Exit without error."
-        puts "############################################################################"
+        puts "\n############################################################################"
+        puts "INPUTFILE ($g_liftoverSV(INPUTFILE) is empty, no SV to lift"
+		puts "Exit without error."
+        puts "############################################################################\n"
         exit 0
     }
 
 	## CHAIN: We should have a ".chain" file
     if {$g_liftoverSV(CHAIN) eq ""} {
-        puts "LiftoverSV needs in argument the path of your CHAIN file (--CHAIN ...) - Exit with error."
+        puts "\n############################################################################"
+        puts "liftoverSV needs in argument the path of your CHAIN file (--CHAIN ...)"
+		puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     }
     if {![regexp -nocase "(\\.chain)$" $g_liftoverSV(CHAIN)]} {
-        puts "############################################################################"
+        puts "\n############################################################################"
         puts "Bad option value: --CHAIN = $g_liftoverSV(CHAIN)"
-        puts "Extension file should be \".chain\" - Exit with error."
-        puts "############################################################################"
+        puts "Extension file should be \".chain\""
+		puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     }
     ## CHAIN: It must be an existing file
     if {![file exists $g_liftoverSV(CHAIN)]} {
-        puts "############################################################################"
-        puts "Bad value for the --CHAIN option, file does not exist ($g_liftoverSV(CHAIN)) - Exit with error."
-        puts "############################################################################"
+        puts "\n############################################################################"
+        puts "Bad value for the --CHAIN option, file does not exist ($g_liftoverSV(CHAIN))"
+		puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     }
 	# CHAIN: with or without prefix "chr"? Should be the same as in the VCF input file
@@ -131,64 +143,75 @@ proc configureLiftoverSV {argv} {
 	set chr_input [fileWithChr $g_liftoverSV(INPUTFILE)]
 	set chr_chain [fileWithChr $g_liftoverSV(CHAIN)]
 	if {$chr_input ne $chr_chain} {
-        puts "############################################################################"
+        puts "\n############################################################################"
         puts "Bad CHAIN file:"
 		puts "- input file $chr_input prefix 'chr' ($g_liftoverSV(INPUTFILE))"
 		puts "- chain file $chr_chain prefix 'chr' ($g_liftoverSV(CHAIN))"
 		puts "Exit with error."
-        puts "############################################################################"
+        puts "############################################################################\n"
         exit 2
 	}
 
     ## REFFASTASEQ: We should have an existing ".fasta" or ".fa" file
     if {![info exists g_liftoverSV(REFFASTASEQ)]} {
-        puts "LiftoverSV needs in argument the path of your REFFASTASEQ file (--REFFASTASEQ ...) - Exit with error."
+        puts "\n############################################################################"
+        puts "liftoverSV needs in argument the path of your REFFASTASEQ file (--REFFASTASEQ ...)"
+		puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     } elseif {![regexp -nocase "((\\.fasta)|(\\.fa))$" $g_liftoverSV(REFFASTASEQ)]} {
-        puts "############################################################################"
+        puts "\n############################################################################"
         puts "Bad option value: --REFFASTASEQ = $g_liftoverSV(REFFASTASEQ)"
-        puts "Extension file should be \".fasta\" or \".fa\" - Exit with error."
-        puts "############################################################################"
+        puts "Extension file should be \".fasta\" or \".fa\""
+		puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     } elseif {![file exists $g_liftoverSV(REFFASTASEQ)]} {
-        puts "############################################################################"
-        puts "Bad value for the --REFFASTASEQ option, file does not exist ($g_liftoverSV(REFFASTASEQ)) - Exit with error."
-        puts "############################################################################"
+        puts "\n############################################################################"
+        puts "Bad value for the --REFFASTASEQ option, file does not exist ($g_liftoverSV(REFFASTASEQ))"
+		puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     }
 
     ## OUTPUTFILE extension must be ".vcf".
     if {$g_liftoverSV(OUTPUTFILE) eq ""} {
-        puts "LiftoverSV needs in argument the path of your OUTPUTFILE file (--OUTPUTFILE ...) - Exit with error."
+        puts "\n############################################################################"
+        puts "liftoverSV needs in argument the path of your OUTPUTFILE file (--OUTPUTFILE ...)"
+		puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     }
 	regsub ".gz" $g_liftoverSV(OUTPUTFILE) "" g_liftoverSV(OUTPUTFILE)
     if {![regexp -nocase "(\\.vcf)$" $g_liftoverSV(OUTPUTFILE)]} {
-        puts "############################################################################"
+        puts "\n############################################################################"
         puts "Bad option value: --OUTPUTFILE = $g_liftoverSV(OUTPUTFILE)"
-        puts "Extension file should be \".vcf\" - Exit with error."
-        puts "############################################################################"
+        puts "Extension file should be \".vcf\""
+		puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     }
 
     # BEDTOOLS, BCFTOOLS, LIFTOVER: It should be a good path that we can run
     foreach tool {BEDTOOLS BCFTOOLS LIFTOVER} {
         if {[catch {eval exec $g_liftoverSV($tool)} Message] && ![regexp -nocase "usage:" $Message]} {
-            puts "############################################################################"
+            puts "\n############################################################################"
             puts "Bad value for the $tool option ($g_liftoverSV($tool))"
             puts "$Message"
             puts "Exit with error."
-            puts "############################################################################"
+            puts "############################################################################\n"
             exit 2
         } 
     }
 
     ## PERCENT: should be defined between 0 and 1.
     if {$g_liftoverSV(PERCENT) < 0 || $g_liftoverSV(PERCENT) > 1} {
+        puts "\n############################################################################"
         puts "Bad option value: --PERCENT = $g_liftoverSV(PERCENT)"
         puts "Should be in the \[0-1\] range values, default = 0.05"
+        puts "Exit with error."
+        puts "############################################################################\n"
         exit 2
     }
-
- 
 }
+

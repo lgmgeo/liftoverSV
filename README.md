@@ -25,27 +25,27 @@
 
 --CHAIN,-C <File>             The liftover chain file
                               See https://genome.ucsc.edu/goldenPath/help/chain.html for a description of chain files
-                              See http://hgdownload.soe.ucsc.edu/downloads.html#terms for where to download chain files.
+                              See http://hgdownload.soe.ucsc.edu/downloads.html#terms for where to download chain files
                               Required
 
 --help,-h <Boolean>           Display the help message
                               Default value: false. Possible values: {true, false}
 
---INPUTFILE,-I <File>         The SV VCF input file.
-                              Gzipped VCF file is supported.
+--INPUTFILE,-I <File>         The SV VCF input file
+                              Gzipped VCF file is supported
                               Multi-allelic lines are not allowed
                               Required
 
---LIFTOVER,-L <File>          The UCSC Liftover tool path
+--LIFTOVER,-L <File>          The UCSC liftOver tool path
                               Default: "liftOver"
 
 --OUTPUTFILE,-O <File>        The liftover SV VCF output file
                               Required
 
---PERCENT,-P <float>          Variation in length authorized for a lifted SV (e.g. difference max between SVLEN < 5%)
+--PERCENT,-P <float>          Variation in length authorized for a lifted SV (e.g. difference max between both SVLENs < 5%)
                               Default value: 0.05
 
---REFFASTASEQ,-R <File>       The reference sequence (fasta) for the TARGET genome build (i.e., the new one after the liftover)
+--REFFASTASEQ,-R <File>       The reference sequence (fasta) for the TARGET genome build (i.e. the new one after the liftover)
 ```
 
 ## How to cite?
@@ -54,12 +54,12 @@ Please cite the following doi if you are using this tool in your research:</br>
 
 ## liftoverSV: 
 
-Lifts over a SV VCF file from one reference build to a target build:
+Lift over a SV VCF file from one reference build to a target build:
 
-* Lifts over #CHROM, POS, REF, ALT, INFO/END and INFO/SVEND</br>
+* Lift over #CHROM, POS, REF, ALT, INFO/END and INFO/SVEND</br>
    (chromosomes, coordinates and sequences are lifted)
 
-* Lifts over INFO/SVLEN, INFO/SVSIZE:
+* Lift over INFO/SVLEN, INFO/SVSIZE:
    - Lifts over for deletion, duplication and inversion (SVLEN_lifted = End_lifted - Start_Lifted)
    - Keep the same SVLEN/SVSIZE for insertion (the number of the inserted bases remains the same)
    - Set SVLEN/SVSIZE to "." for SV type not equal to DEL, DUP, INV or INS (TRA, CPX...)
@@ -69,10 +69,9 @@ Lifts over a SV VCF file from one reference build to a target build:
    - Case2: One position (start or end) goes to a different chrom from the other (except for translocation)
    - Case3: "lifted start" > "lifted end"
    - Case4: The distance between the two lifted positions changes significantly (Default: difference between both SVLENs > 5%)</br>
-   - Case5: The ALT feature is not a square or an angle bracketed notation.</br>
-     Square-bracketed notation examples: `A]chr2:32156]` or `ACCCCC[chr2:32156[` </br>
-     Angle-bracketed notation examples: `<INS>` or `<CN0>`</br>
-     Non authorized format example: `REF="A" and ALT="ACGGTAG"`</br>
+   - Case5: The REF and ALT features are represented with complex sequences:
+       - Deletion: the REF sequence is not at the beginning of the ALT sequence e.g. `REF="ATTCTTG" and ALT="TC"
+       - Insertion: the ALT sequence is not at the beginning of the REF sequence e.g. `REF="TC" and ALT="ATTCTTG"
 
    => See "OUTPUTFILE.unmapped" file for details
 
@@ -91,6 +90,11 @@ Lifts over a SV VCF file from one reference build to a target build:
 	  As the format (Number, String) is not known, "Number=." and "Type=String" values are used by default:</br>
 	  e.g. `##FORMAT=<ID=XXX,Number=.,Type=String,Description="XXX">`</br>
 	  e.g. `##INFO=<ID=YYY,Number=.,Type=String,Description="YYY">`
+
+* Do not lift over "ID"</br>
+	In some VCF files, the ID field is formatted with a combination of chromosome and position (human-readable ID): e.g. `chr22:16848506:DG`</br>
+	Since the ID values are essential to track SV across the different genome build versions, no lift is done on these IDs.
+
 
 ## Requirements
 ### a) The UCSC Liftover tool (required)
@@ -111,8 +115,6 @@ See section 3: "INFO keys used for structural variants"
 
 * Lifts over INFO/HOMLEN, INFO/HOMSEQ
   
-* Lifts over ALT when described with square bracket notation. For example, G]17:198982] or ]chr1:3000]A</br>
-cf [https://github.com/EUCANCan/variant-extractor](variantextractor) for notation rules
 
 
 
