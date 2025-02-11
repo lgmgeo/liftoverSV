@@ -1,0 +1,59 @@
+# Source: https://samtools.github.io/hts-specs/VCFv4.4.pdf
+
+
+# FILTER
+########
+# Key Description
+PASS All filters passed
+q10	Quality below 10
+s50	Less than 50% of samples have data
+
+
+# INFO
+######
+# Key Number Type Description
+AA 1 String Ancestral allele
+AC A Integer Allele count in genotypes, for each ALT allele, in the same order as listed
+AD R Integer Total read depth for each allele
+ADF R Integer Read depth for each allele on the forward strand
+ADR R Integer Read depth for each allele on the reverse strand
+AF A Float Allele frequency for each ALT allele in the same order as listed
+AN 1 Integer Total number of alleles in called genotypes
+BQ 1 Float RMS base quality
+CIGAR A String Cigar string describing how to align an alternate allele to the reference allele
+DB 0 Flag dbSNP membership
+DP 1 Integer Combined depth across samples
+END 1 Integer End position on CHROM (used with symbolic alleles)
+H2 0 Flag HapMap2 membership
+H3 0 Flag HapMap3 membership
+MQ 1 Float RMS mapping quality
+MQ0 1 Integer Number of MAPQ == 0 reads
+NS 1 Integer Number of samples with data
+SB 4 Integer Strand bias
+SOMATIC 0 Flag Somatic mutation (for cancer genomics)
+VALIDATED 0 Flag Validated by follow-up experiment
+1000G 0 Flag 1000 Genomes membership
+
+
+# FORMAT
+########
+# Field Number Type Description
+AD R Integer Read depth for each allele
+ADF R Integer Read depth for each allele on the forward strand
+ADR R Integer Read depth for each allele on the reverse strand
+DP 1 Integer Read depth
+EC A Integer Expected alternate allele counts
+FT 1 String Filter indicating if this genotype was called
+GL G Float Genotype likelihoods
+GP G Float Genotype posterior probabilities
+GQ 1 Integer Conditional genotype quality
+GT 1 String Genotype
+HQ 2 Integer Haplotype quality
+MQ 1 Integer RMS mapping quality
+PL G Integer Phred-scaled genotype likelihoods rounded to the closest integer
+PP G Integer Phred-scaled genotype posterior probabilities rounded to the closest integer
+PQ 1 Integer Phasing quality
+PS 1 Integer Phase set
+PSL P String Phase set list
+PSO P Integer Phase set list ordinal
+PSQ P Integer Phase set list quality

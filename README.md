@@ -86,8 +86,9 @@ Lift over a SV VCF file from one reference build to a target build:
 	  e.g. `##assembly=liftoverSV used with hg19ToHg38.over.chain`
 	- Create the "liftoverSV_version" field</br>
 	  e.g. `##liftoverSV_version=0.1.2_beta; hg19ToHg38.over.chain; August 30 2024 12:30`
-	- Update the "INFO" and "FORMAT field if one value is missing.</br>
-	  As the format (Number, String) is not known, "Number=." and "Type=String" values are used by default:</br>
+	- Update the "INFO", "FORMAT" and "FILTER" fields if one value is missing.</br>
+      Possible rescues in the \"$LIFTOVERSV/share/doc/liftoverSV/vcf_header_lines.txt"\ file.</br>
+      Else, as the format (Number, String) is not known, "Number=." and "Type=String" values are used by default:</br>
 	  e.g. `##FORMAT=<ID=XXX,Number=.,Type=String,Description="XXX">`</br>
 	  e.g. `##INFO=<ID=YYY,Number=.,Type=String,Description="YYY">`
 

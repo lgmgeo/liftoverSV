@@ -22,6 +22,7 @@
 proc extractAllTheGenomicCoordinates {} {
 
 	global g_liftoverSV
+    global g_L_chrom
 
 
 	puts "\n...reading [file tail $g_liftoverSV(INPUTFILE)] ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
@@ -30,6 +31,9 @@ proc extractAllTheGenomicCoordinates {} {
 	set L_toWrite {}
 	set i 0
 	set nSV 0
+    set g_L_chrom(beforeLifted) {}
+
+
 
 	if {[regexp ".gz$" $g_liftoverSV(INPUTFILE)]} {
 	    set F [open "|gzip -cd $g_liftoverSV(INPUTFILE)"]
@@ -38,7 +42,17 @@ proc extractAllTheGenomicCoordinates {} {
 	}
 	while {[gets $F L]>=0} {
 	
-		if {[regexp "^#" $L]} {continue}
+		if {[regexp "^#" $L]} {
+			# Memorize the contigs defined in the header lines:
+			# e.g. ##contig=<ID=chr1,length=249250621>
+            if {[regexp "^##contig=<ID=(\[^,>\]+)" $L match contig]} {
+				if {[lsearch -exac $g_L_chrom(beforeLifted) $contig] eq -1} {
+					lappend g_L_chrom(beforeLifted) $contig
+				}
+			}
+			continue
+		}
+
 		set Ls [split $L "\t"]
 
 	    set chrom [lindex $Ls 0]
@@ -109,7 +123,7 @@ proc extractAllTheGenomicCoordinates {} {
 		}
 
 		# Square-bracketed ALT notation
-		if {[regexp "(\\\[|\\\])(\[chr0-9\]+):(\[0-9\]+)(\\\[|\\\])" $alt match tutu chromALT VCFposALT]} {
+		if {[regexp "(\\\[|\\\])(\[^:\]+):(\[0-9\]+)(\\\[|\\\])" $alt match tutu chromALT VCFposALT]} {
 			set BEDposALT [expr {$VCFposALT-1}]
 			if {![info exists localMemory($chromALT,$BEDposALT)]} {
                 set localMemory($chromALT,$BEDposALT) 1
@@ -127,6 +141,7 @@ proc extractAllTheGenomicCoordinates {} {
 	close $F
     puts "\t* $nSV SV given in input"
     puts "\t* creation of $tmpBEDfile with the different coordinates to lift (CHROM:POS, CHROM:END...)"
+    puts "\t  ($i genomic coordinates to lift)"
 	WriteTextInFile [join $L_toWrite "\n"] $tmpBEDfile
 	
 	return $tmpBEDfile
@@ -139,11 +154,7 @@ proc liftoverGenomicCoordinates {tmpBEDfile} {
 
     global g_liftoverSV
 
-	puts "\n...liftover $tmpBEDfile ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
-
-	if {![catch {set i [lindex [eval exec wc -l $tmpBEDfile] 0]} Message]} {
-		puts "\t($i genomic coordinates)"
-	}
+	puts "\n...lifting over $tmpBEDfile ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
 
 	regsub ".bed" $tmpBEDfile ".lifted.bed" tmpBEDfileLifted
 	set command "$g_liftoverSV(LIFTOVER) $tmpBEDfile $g_liftoverSV(CHAIN) $tmpBEDfileLifted unMapped"
@@ -175,7 +186,6 @@ proc memorizeGenomicCoordinates {tmpBEDfile tmpBEDfileLifted} {
 
 	puts "\n...memorizing the lifted coordinates ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
 
-    set g_L_chrom(beforeLifted) {}
 	set F [open "$tmpBEDfile"]
 	while {[gets $F L]>=0} {
 	    set Ls [split $L "\t"]
@@ -185,9 +195,6 @@ proc memorizeGenomicCoordinates {tmpBEDfile tmpBEDfileLifted} {
         set VCFpos [expr {$BEDpos+1}]
 	    set id [lindex $Ls end]
 	    set g_ID($chrom,$VCFpos) $id
-        if {[lsearch -exac $g_L_chrom(beforeLifted) $chrom] eq -1} {
-            lappend g_L_chrom(beforeLifted) $chrom
-        }
 	}
 
 	set g_L_chrom(lifted) {}
@@ -242,7 +249,7 @@ proc memorizeGenomicCoordinates {tmpBEDfile tmpBEDfileLifted} {
 # The missing value . should be used for all other ALT alleles, including ALT alleles using breakend notation.
 # ==> For INS, the SVLEN is defined as the number of the inserted bases. No liftover needed!!
 #
-# INFO/CIPOS and INFO/CIEND:
+# INFO/CIPOS and INF²O/CIEND:
 ############################
 # Check and modify if needed the CIPOS/CIEND values in order to have:
 #	=> POS-CIPOS > 0
@@ -254,6 +261,7 @@ proc writeTheLiftedVCF {} {
     global g_ID
     global g_liftedCoord
     global g_L_chrom
+	global g_addNewHeaderLines 
 
 
     if {![regsub ".vcf$" $g_liftoverSV(OUTPUTFILE) ".unmapped" unmappedFile]} {
@@ -263,20 +271,24 @@ proc writeTheLiftedVCF {} {
         exit 2
     }
 
-	puts "\n...writing [file tail $g_liftoverSV(OUTPUTFILE)] ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
-	file delete -force $g_liftoverSV(OUTPUTFILE)
+    regsub ".vcf$" $g_liftoverSV(OUTPUTFILE) ".tmp.vcf" tmpOUTPUTFILE
+	puts "\n...writing temporary [file tail $tmpOUTPUTFILE] ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
+	file delete -force $tmpOUTPUTFILE
     file delete -force $unmappedFile
 
 	# SVLEN calculation only for the following svtypes (not INS, TRA, CPX...)
 	set L_svtypes {DUP DEL INV}
 
-	# Memorize if there are new INFO/FORMAT annotations to add in the header lines
+	# Memorize if there are new INFO/FORMAT/FILTER annotations to add in the header lines
     set L_header_INFO ""
     set L_header_FORMAT ""
+    set L_header_FILTER ""
 	set L_SVlines_INFO ""
 	set L_SVlines_FORMAT ""
+    set L_SVlines_FILTER ""
     set L_new_INFO ""
     set L_new_FORMAT ""
+    set L_new_FILTER ""
 
 	set L_toWrite {}
 	set n_mapped 0
@@ -295,7 +307,9 @@ proc writeTheLiftedVCF {} {
 	} else {
 		set F [open "$g_liftoverSV(INPUTFILE)"]
 	}
+
 	set testContigs "toDo"
+
 	while {[gets $F L]>=0} {
 
 		# VCF header lines
@@ -310,7 +324,7 @@ proc writeTheLiftedVCF {} {
 			}
 			if {$testContigs eq "inProgress"} {
 				foreach chrom [lsort $g_L_chrom(lifted)] {
-					if {[lsearch -exact $g_L_chrom(beforeLifted) $chrom] ne -1} {
+					if {[lsearch -exact $g_L_chrom(beforeLifted) $chrom] eq -1} {
 						lappend L_toWrite "##contig=<ID=$chrom>"
 					}
 				}
@@ -320,15 +334,30 @@ proc writeTheLiftedVCF {} {
 
 			##INFO=<ID=ID,Number=number,Type=type,Description="description",Source="source",Version="version">
 			##FORMAT=<ID=ID,Number=number,Type=type,Description="description">
+			##FILTER=<ID=ID,Description="description">
 			if {[regexp "^##INFO=<ID=(\[^,\]+)," $L match knownValue]} {
 				lappend L_header_INFO $knownValue
 			}
             if {[regexp "^##FORMAT=<ID=(\[^,\]+)," $L match knownValue]} {
                 lappend L_header_FORMAT $knownValue
             }
+            if {[regexp "^##FILTER=<ID=(\[^,\]+)," $L match knownValue]} {
+                lappend L_header_FILTER $knownValue
+            }
 
-			continue
+			# Rescue if there is no contig lines in the header
+			if {[regexp "^#CHROM" $L] && $testContigs eq "toDo"} {
+			    foreach chrom [lsort $g_L_chrom(lifted)] {
+			        if {[lsearch -exact $g_L_chrom(beforeLifted) $chrom] eq -1} {
+			            lappend L_toWrite "##contig=<ID=$chrom>"
+			        }
+			    }
+				set testContigs "done"
+			}
+
+            continue
 		}
+
 
 		# SV lines
 		##########
@@ -482,8 +511,12 @@ proc writeTheLiftedVCF {} {
 		set L_SVlines_INFO [lsort -unique $L_SVlines_INFO]
 
         # Memorize all the FORMAT annotations presents in the SV lines
-        lappend L_SVlines_FORMAT {*}[split $format_annot ";"]
+        lappend L_SVlines_FORMAT {*}[split $format_annot ":"]
+        set L_SVlines_FORMAT [lsort -unique $L_SVlines_FORMAT]
 
+        # Memorize all the FILTER annotations presents in the SV lines
+        lappend L_SVlines_FILTER {*}[split $filter ";"]
+        set L_SVlines_FILTER [lsort -unique $L_SVlines_FILTER]
 
 		# Lift over the square-bracketed ALT 
         if {[regexp "(\[acgtnACGTN\]*)(\\\[|\\\])(\[^:\]+):(\[0-9\]+)(\\\[|\\\])(\[acgtnACGTN\]*)" $alt match baseLeft bracketLeft chromALT posALT bracketRight baseRight]} {
@@ -644,7 +677,7 @@ proc writeTheLiftedVCF {} {
 		incr n_mapped
 
 	    if {![expr {$n_mapped%10000}]} {
-	        WriteTextInFile [join $L_toWrite "\n"] $g_liftoverSV(OUTPUTFILE)
+	        WriteTextInFile [join $L_toWrite "\n"] $tmpOUTPUTFILE
 	        set L_toWrite {}
 	    }
         if {$n_unmapped ne 0 && ![expr {$n_unmapped%10000}]} {
@@ -657,7 +690,7 @@ proc writeTheLiftedVCF {} {
 
 	# Writings
 	if {$L_toWrite ne ""} {
-		WriteTextInFile [join $L_toWrite "\n"] $g_liftoverSV(OUTPUTFILE)
+		WriteTextInFile [join $L_toWrite "\n"] $tmpOUTPUTFILE
 	}
     if {$L_unmappedToWrite ne ""} {
 		WriteTextInFile [join $L_unmappedToWrite "\n"] $unmappedFile
@@ -674,16 +707,21 @@ proc writeTheLiftedVCF {} {
 		if {$case5} {puts "\t- $case5 SV with an ALT feature that is not a square/angle bracketed notation."}
 	}
 
-	# Add new header lines (only for INFO or FORMAT) if needed
+	# Add new header lines (only for INFO, FORMAT or FILTER) if needed
 	foreach val $L_SVlines_INFO {
 		if {[lsearch -exact $L_header_INFO $val] eq -1} {lappend L_new_INFO $val}
 	}
     foreach val $L_SVlines_FORMAT {
         if {[lsearch -exact $L_header_FORMAT $val] eq -1} {lappend L_new_FORMAT $val}
     }
+    foreach val $L_SVlines_FILTER {
+        if {[lsearch -exact $L_header_FILTER $val] eq -1} {lappend L_new_FILTER $val}
+    }
 
-	if {$L_new_INFO ne "" || $L_new_FORMAT ne ""} {
-		addNewHeaderLinesAndSort $L_new_INFO $L_new_FORMAT
+    set g_addNewHeaderLines 0
+	if {$L_new_INFO ne "" || $L_new_FORMAT ne "" || $L_new_FILTER ne ""} {
+		set g_addNewHeaderLines 1
+		addNewHeaderLinesAndSort $L_new_INFO $L_new_FORMAT $L_new_FILTER
 	}
 
 	return
@@ -703,36 +741,94 @@ proc writeTheLiftedVCF {} {
 ##SAMPLE=<ID=Sample1,Assay=WholeGenome,Ethnicity=AFR,Disease=None,Description="Patient germline genome from unaffected",DOI=url>
 ##PEDIGREE=<ID=TumourSample,Original=GermlineID>
 
-# Add new header lines (only for INFO or FORMAT) if needed:
-###########################################################
-# As the format (Number, String) is not known, "Number=." and "Type=String" values are used by default:
-# - ##FORMAT=<ID=XXX,Number=.,Type=String,Description="XXX">
-# - ##INFO=<ID=YYY,Number=.,Type=String,Description="YYY">
-proc addNewHeaderLinesAndSort {L_new_INFO L_new_FORMAT} {
+# Add new header lines (only for INFO, FORMAT and FILTER) if needed:
+####################################################################
+# 1 - Retrieve information from $LIFTOVERSV/share/doc/liftoverSV/vcf_header_lines.txt
+# 2 - If not present, as the format (Number, String) is not known, "Number=." and "Type=String" values are used by default:
+#     - ##FORMAT=<ID=XXX,Number=.,Type=String,Description="XXX">
+#     - ##INFO=<ID=YYY,Number=.,Type=String,Description="YYY">
+#     - ##FILTER=<ID=YYY,Description="YYY">
+proc addNewHeaderLinesAndSort {L_new_INFO L_new_FORMAT L_new_FILTER} {
 
     global g_liftoverSV
  
-    regsub ".vcf$" $g_liftoverSV(OUTPUTFILE) ".checked.vcf" checkedOUTPUTFILE
-	file delete -force $checkedOUTPUTFILE
 
-	foreach val $L_new_INFO {
-		lappend L_INFO "##INFO=<ID=$val,Number=.,Type=String,Description=\"$val\">"
+    puts "\n...checking the INFO, FORMAT and FILTER header lines ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
+    puts "\t* creation of $g_liftoverSV(OUTPUTFILE)"
+
+    regsub ".vcf$" $g_liftoverSV(OUTPUTFILE) ".tmp.vcf" tmpOUTPUTFILE
+	file delete -force $g_liftoverSV(OUTPUTFILE)
+
+
+	# Memorize information from $LIFTOVERSV/share/doc/liftoverSV/vcf_header_lines.txt
+	set headerFile "$g_liftoverSV(installDir)/share/doc/liftoverSV/vcf_header_lines.txt"	
+	# FILTER line: Key Description
+	# INFO line: Key Number Type Description
+	# FORMAT line: Field Number Type Description
+	foreach L [LinesFromFile $headerFile] {
+		if {[regexp "^#" $L]} {
+			if {[regexp "^# FILTER"	$L]} {set feature "FILTER"}
+			if {[regexp "^# INFO" $L]} {set feature "INFO"}
+			if {[regexp "^# FORMAT" $L]} {set feature "FORMAT"}
+			continue
+		}	
+		if {$L eq ""} {continue}
+		if {$feature eq "FILTER"} {
+			set Key [lindex $L 0]
+			set Description [ join [lrange $L 1 end] " "]
+			set FILTER($Key,Description) $Description
+		} elseif {$feature eq "INFO"} {
+            set Key [lindex $L 0]
+            set Number [lindex $L 1]
+            set Type [lindex $L 2]
+            set Description [ join [lrange $L 3 end] " "]
+            set INFO($Key,Number) $Number
+            set INFO($Key,Type) $Type
+            set INFO($Key,Description) $Description
+        } elseif {$feature eq "FORMAT"} {
+            set Key [lindex $L 0]
+            set Number [lindex $L 1]
+            set Type [lindex $L 2]
+            set Description [ join [lrange $L 3 end] " "]
+            set FORMAT($Key,Number) $Number
+            set FORMAT($Key,Type) $Type
+            set FORMAT($Key,Description) $Description
+        }
 	}
-    foreach val $L_new_FORMAT {
-        lappend L_FORMAT "##FORMAT=<ID=$val,Number=.,Type=String,Description=\"$val\">"
+
+	# Add INFO, FORMAT and FILTER
+	foreach Key $L_new_INFO {
+		if {[info exist INFO($Key,Description)]} {
+			lappend L_INFO "##INFO=<ID=$Key,Number=$INFO($Key,Number),Type=$INFO($Key,Type),Description=\"$INFO($Key,Description)\">"
+		} else {
+			lappend L_INFO "##INFO=<ID=$Key,Number=.,Type=String,Description=\"$Key\">"
+		}
+	}
+    foreach Key $L_new_FORMAT {
+        if {[info exist FORMAT($Key,Description)]} {
+            lappend L_FORMAT "##FORMAT=<ID=$Key,Number=$FORMAT($Key,Number),Type=$FORMAT($Key,Type),Description=\"$FORMAT($Key,Description)\">"
+        } else {
+			lappend L_FORMAT "##FORMAT=<ID=$Key,Number=.,Type=String,Description=\"$Key\">"
+		}
+    }
+    foreach Key $L_new_FILTER {
+        if {[info exist FILTER($Key,Description)]} {
+            lappend L_FILTER "##FILTER=<ID=$Key,Description=\"$FILTER($Key,Description)\">"
+        } else {
+			lappend L_FILTER "##FILTER=<ID=$Key,Description=\"$Key\">"
+		}
     }
 
     set L_fileformat ""
     set L_assembly ""
 	set L_contig ""
-	set L_FILTER ""
 	set L_ALT ""
 	set L_META ""
 	set L_SAMPLE ""
 	set L_PEDIGREE ""
 	set L_others ""
 	set L_CHROM ""
-	set F [open $g_liftoverSV(OUTPUTFILE)]
+	set F [open $tmpOUTPUTFILE]
     while {[gets $F L]>=0} {
         if {[regexp "^#" $L]} {
             if {[regexp "^##fileformat=" $L]} {
@@ -775,29 +871,50 @@ proc addNewHeaderLinesAndSort {L_new_INFO L_new_FORMAT} {
 		}
 	}
 	
-	if {$L_fileformat ne ""} {WriteTextInFile [join [lsort -dictionary $L_fileformat] "\n"] $checkedOUTPUTFILE}
 
+    set L_toWrite {}
+
+	##fileformat=VCFv4.4
+	if {$L_fileformat ne ""} {lappend L_toWrite {*}[lsort -dictionary $L_fileformat]}
+
+	##assembly=url
 	# Indicate the use of liftoverSV in the header lines
-    if {$L_assembly eq ""} {lappend L_assembly "##assembly=liftoverSV used with $g_liftoverSV(CHAIN)"}
-	WriteTextInFile [join [lsort -dictionary $L_assembly] "\n"] $checkedOUTPUTFILE
-    set newHeaderLine "##liftoverSV_version=$g_liftoverSV(Version); $g_liftoverSV(CHAIN); [clock format [clock seconds] -format "%B %d %Y %H:%M"]"
-    WriteTextInFile $newHeaderLine $checkedOUTPUTFILE
+	if {$L_assembly eq ""} {
+		lappend L_assembly "##assembly=liftoverSV used with $g_liftoverSV(CHAIN)"
+	}
+    lappend L_assembly "##liftoverSV_version=$g_liftoverSV(Version); $g_liftoverSV(CHAIN); [clock format [clock seconds] -format "%B %d %Y %H:%M"]"
+    lappend L_toWrite {*}[lsort -dictionary $L_assembly]
 
-    if {$L_contig ne ""} {WriteTextInFile [join [lsort -dictionary $L_contig] "\n"] $checkedOUTPUTFILE}
-    if {$L_FILTER ne ""} {WriteTextInFile [join [lsort -dictionary $L_FILTER] "\n"] $checkedOUTPUTFILE}
-    if {$L_INFO ne ""} {WriteTextInFile [join [lsort -dictionary $L_INFO] "\n"] $checkedOUTPUTFILE}
-    if {$L_FORMAT ne ""} {WriteTextInFile [join [lsort -dictionary $L_FORMAT] "\n"] $checkedOUTPUTFILE}
-    if {$L_ALT ne ""} {WriteTextInFile [join [lsort -dictionary $L_ALT] "\n"] $checkedOUTPUTFILE}
-    if {$L_META ne ""} {WriteTextInFile [join [lsort -dictionary $L_META] "\n"] $checkedOUTPUTFILE}
-    if {$L_SAMPLE ne ""} {WriteTextInFile [join [lsort -dictionary $L_SAMPLE] "\n"] $checkedOUTPUTFILE}
-    if {$L_PEDIGREE ne ""} {WriteTextInFile [join [lsort -dictionary $L_PEDIGREE] "\n"] $checkedOUTPUTFILE}
-    if {$L_others ne ""} {WriteTextInFile [join [lsort -dictionary $L_others] "\n"] $checkedOUTPUTFILE}
+	##contig=<ID=ctg1,length=81195210,URL=ftp://somewhere.example/assembly.fa,md5=f126cdf8a6e0c7f379d618ff66beb2da,...>
+    if {$L_contig ne ""} {
+		foreach contigLine [lsort -dictionary $L_contig] {
+			# Add the length of the contig if absent:
+			if {![regexp "length=" $contigLine]} {
+				if {[regexp "^##contig=<ID=(\[^,>\]+)" $contigLine match contig]} {
+					catch {regsub "^##contig=<ID=$contig" $contigLine "##contig=<ID=$contig, length=$g_liftoverSV(sizeAfterLift,$contig)" contigLine} Message
+				}
+			}
+			lappend L_toWrite $contigLine
+		}
+	}
 
-	WriteTextInFile $L_CHROM $checkedOUTPUTFILE
+    if {$L_FILTER ne ""} {lappend L_toWrite {*}[lsort -dictionary $L_FILTER]}
+    if {$L_INFO ne ""} {lappend L_toWrite {*}[lsort -dictionary $L_INFO]}
+    if {$L_FORMAT ne ""} {lappend L_toWrite {*}[lsort -dictionary $L_FORMAT]}
+    if {$L_ALT ne ""} {lappend L_toWrite {*}[lsort -dictionary $L_ALT]}
+    if {$L_META ne ""} {lappend L_toWrite {*}[join [lsort -dictionary $L_META]}
+    if {$L_SAMPLE ne ""} {lappend L_toWrite {*}[join [lsort -dictionary $L_SAMPLE]}
+    if {$L_PEDIGREE ne ""} {lappend L_toWrite {*}[join [lsort -dictionary $L_PEDIGREE]}
+    if {$L_others ne ""} {lappend L_toWrite {*}[lsort -dictionary $L_others]}
+	lappend L_toWrite $L_CHROM
 
-	eval exec grep -v "^#" $g_liftoverSV(OUTPUTFILE) | sort -k1,1V -k2,2n >> $checkedOUTPUTFILE
 
-	file rename -force $checkedOUTPUTFILE $g_liftoverSV(OUTPUTFILE)
+	WriteTextInFile [join $L_toWrite "\n"] $g_liftoverSV(OUTPUTFILE)
+	eval exec grep -v "^#" $tmpOUTPUTFILE | sort -k1,1V -k2,2n >> $g_liftoverSV(OUTPUTFILE)
+
+
+    file delete -force $tmpOUTPUTFILE
+
 
 	return
 }
@@ -806,23 +923,31 @@ proc addNewHeaderLinesAndSort {L_new_INFO L_new_FORMAT} {
 proc sortTheLiftedVCF {} {
 
     global g_liftoverSV
+	global g_addNewHeaderLines
 
-	# Try to sort the output file
-	regsub ".vcf$" $g_liftoverSV(OUTPUTFILE) ".sort.vcf.gz" sortedOUTPUTFILE
 
+    regsub ".vcf$" $g_liftoverSV(OUTPUTFILE) ".sort.vcf.gz" sortedOUTPUTFILE
+    puts "\n...writing [file tail $sortedOUTPUTFILE] ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
+
+
+	# Depending on the "addNewHeaderLines" step
+	if {! $g_addNewHeaderLines} {
+		file rename -force $tmpOUTPUTFILE $sortedOUTPUTFILE
+	}
+
+    # Try to sort the output file
 	if {[catch {eval exec $g_liftoverSV(BCFTOOLS) sort $g_liftoverSV(OUTPUTFILE) -o $sortedOUTPUTFILE -Oz} Message]} {
 		if {![regexp "Done$" $Message]} {
-			puts "\n\nPlease sort and compress the output file, run :"
 			puts "bcftools sort $g_liftoverSV(OUTPUTFILE) -o $sortedOUTPUTFILE -Oz"
 			puts $Message
-		} else {
-			puts "\n...sort and compress [file tail $g_liftoverSV(OUTPUTFILE)] ([clock format [clock seconds] -format "%B %d %Y - %H:%M"])"
-			puts "\t* creation of [file tail $sortedOUTPUTFILE]"
-			if {[file exists $sortedOUTPUTFILE]} {
-				file delete -force $g_liftoverSV(OUTPUTFILE)
-			}
-		}
+		} 
 	}
+
+	# Clean
+	if {[file exists $sortedOUTPUTFILE]} {
+        file delete -force $g_liftoverSV(OUTPUTFILE)
+    } 
+
 }
 
 
