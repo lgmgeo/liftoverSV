@@ -52,7 +52,7 @@
 Please cite the following doi if you are using this tool in your research:</br>
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12799803.svg)](https://doi.org/10.5281/zenodo.12799803)
 
-## liftoverSV: 
+## liftoverSV
 
 Lift over a SV VCF file from one reference build to a target build:
 
@@ -106,9 +106,22 @@ The “bedtools” toolset needs to be locally installed to lift over sequences 
 ### c) bcftools
 The “bcftools” toolset needs to be locally installed to sort the VCF output file
 
+
 ## SV VCF format: Documentation
 cf https://samtools.github.io/hts-specs/VCFv4.4.pdf</br>
 See section 3: "INFO keys used for structural variants"
+
+
+## liftoverSV: Examples of Authorized Formats
+| CHROM | POS      | REF                | ALT                             | FILTER | INFO                                              |
+| :---: | :------: | :----------------: | :-----------------------------: | :----: | :-----------------------------------------------: |
+| chr22 | 16848506 | G                  | &lt;DEL&gt;| PASS   | END=16848558;SVLEN=52;SVSIZE=52;SVTYPE=DEL        |
+| chr17 | 198982   | G                  | G]chr2:321681]                  | PASS   | SVTYPE=BND;EXTRA=TRA_PAIRED_WITHOUT_MATE_ID       |
+| chr2  | 321681   | G                  | G]chr17:198982]                 | PASS   | SVTYPE=BND;EXTRA=TRA_PAIRED_WITHOUT_MATE_ID       |
+| chr13 | 53040041 | T                  | TATATATATACACAC[chr13:53040042[ | PASS   | SVTYPE=INS                                        |
+| chr1  | 2523792  | ACGCCCCCTCCCCTGCTGTGCTGGCACCC<br/>CCTCCCCTGCCGCGCTGATGCCCCCTCCC<br/>CTGATGCACTGGCGCCCCCTCCCCTGCCA<br/>TGCTGACGCCCCCTCCCCTGCCGTGCTGG<br/>CGCCCCCTCCCC  | A      | PASS | VARTYPE=SV;SVTYPE=DEL;SVLEN=-128 |
+| chr1  | 2524045  | A                  | ATGCCCCCTCCCCTGAGGCACTGGTGCCC<br/>CCCTCCCCTGCAGCGCTGATGCCCCCCCTC<br/>CCCTGCCATGCTGACGCCCCCTCCCCTGAT<br>GCACTGG | LowQUAL | VARTYPE=SV;SVTYPE=INS;SVLEN=95 |
+
 
 ## Feature requested for future release
 
