@@ -1,0 +1,11 @@
+##fileformat=VCFv4.4
+##ALT=<ID=INS,Description="Insertion">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the longest variant described in this record">
+##INFO=<ID=CIPOS,Number=.,Type=Integer,Description="Confidence interval around POS for symbolic structural variants">
+##INFO=<ID=SVLEN,Number=A,Type=Integer,Description="Length of structural variant">
+##INFO=<ID=CILEN,Number=.,Type=Integer,Description="Confidence interval for the SVLEN field">
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##contig=<ID=chr1,length=249250621>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample
+chr1	123456	.	A	<INS>	.	.	IMPRECISE;SVLEN=100;CILEN=-50,50;CIPOS=-10,10;END=123456	GT	0/1

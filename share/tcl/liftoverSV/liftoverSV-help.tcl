@@ -1,5 +1,5 @@
 ############################################################################################################
-# liftoverSV 0.1.2_beta                                                                                    #
+# liftoverSV 0.2.0_beta                                                                                    #
 #                                                                                                          #
 # Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
@@ -18,15 +18,15 @@
 ############################################################################################################
 
 proc showHelp {} {
-
+    
     global g_liftoverSV
-
+    
     if {[file exists $g_liftoverSV(installDir)/commandLineOptions.txt]} {
         puts [ContentFromFile $g_liftoverSV(installDir)/commandLineOptions.txt]
     } elseif {[file exists $g_liftoverSV(docDir)/commandLineOptions.txt]} {
         puts [ContentFromFile $g_liftoverSV(docDir)/commandLineOptions.txt]
     }
-
+    
     return
 }
 

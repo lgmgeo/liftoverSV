@@ -1,0 +1,15 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##contig=<ID=chr1,length=249250621,md5=2648ae1bacce4ec4b6cf337dcae37816>
+##FILTER=<ID=.,Description=".">
+##INFO=<ID=ID,Number=A,Type=String,Description="Representative variant for this record was taken from this sample (source of contig and sequence information)">
+##INFO=<ID=LEAD_SAMPLE,Number=A,Type=String,Description="Variant ID from PAV. Merged VCFs use the variant ID from the leading sample (first sample this variant was found it).">
+##INFO=<ID=SVLEN,Number=A,Type=Integer,Description="Variant length (1 for SNVs, negative for DELs)">
+##INFO=<ID=SVTYPE,Number=A,Type=String,Description="Variant type (INS, DEL, INV, SNV)">
+##INFO=<ID=TIG_REGION,Number=A,Type=String,Description="Assembly contig and coordinates coordinates.">
+##INFO=<ID=TIG_STRAND,Number=A,Type=String,Description="Assembly contig strand relative to the reference.">
+##INFO=<ID=VARTYPE,Number=A,Type=String,Description="Variant class (SV, INDEL, SNV)">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample
+chr1	2523792	SV1	ACGCCCCCTCCCCTGCTGTGCTGGCACCCCCTCCCCTGCCGCGCTGATGCCCCCTCCCCTGATGCACTGGCGCCCCCTCCCCTGCCATGCTGACGCCCCCTCCCCTGCCGTGCTGGCGCCCCCTCCCCTGCCGCGCTGACGCCCCCTCCCCTGCCGCGCTGACGCCCCCTCCCCTGCCGCGCTGATGCCCCCTCCCCTGCCGTGCTGG	A	.	.	VARTYPE=SV;SVTYPE=DEL;SVLEN=-207;ID=chr1-2592354-DEL-207;LEAD_SAMPLE=HG00731;TIG_REGION=cluster8_000020F:1171593-1171593;TIG_STRAND=+	GT	1|1
+chr1	2524045	SV2	A	ATGCCCCCTCCCCTGAGGCACTGGTGCCCCCCTCCCCTGCAGCGCTGATGCCCCCCCTCCCCTGCCATGCTGACGCCCCCTCCCCTGATGCACTGG	.	.	VARTYPE=SV;SVTYPE=INS;SVLEN=95;ID=chr1-2592607-INS-95;LEAD_SAMPLE=HG03486;TIG_REGION=cluster1_000040F:1119007-1119101;TIG_STRAND=+	GT	0|1

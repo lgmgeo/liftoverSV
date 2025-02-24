@@ -1,0 +1,58 @@
+
+liftoverSV 0.2.0_beta
+Copyright (C) 2024-current GEOFFROY Veronique
+Please feel free to create a Github issue for any suggestions or bug reports (https://github.com/lgmgeo/liftoverSV/issues)
+
+Tcl/Tk version: 8.6
+
+Application name used:
+/WORKING_DIRECTORY/vgeoffroy/liftoverSV/liftoverSV_dev
+
+
+...loading configuration data (February 25 2025 - 10:13)
+
+...checking configuration data (February 25 2025 - 10:13)
+
+...listing arguments
+	*********************************************
+	liftoverSV has been run with these arguments:
+	*********************************************
+	--BCFTOOLS bcftools
+	--BEDTOOLS bedtools
+	--CHAIN /PUBLIC_DATA/ReferenceGenomes/Liftover_Chain_Files/hg19ToHg38.over.chain
+	--INPUTFILE ./input/input_hg19.vcf
+	--LIFTOVER liftOver
+	--OUTPUTDIR ./output
+	--OUTPUTFILE ./output/output_hg38.vcf
+	--PERCENT 0.05
+	--REFFASTASEQ /PUBLIC_DATA/ReferenceGenomes/UCSChg38/hg38.fa
+	*********************************************
+
+...checking the REFFASTASEQ file (February 25 2025 - 10:13)
+
+...memorizing the size of the chromosomes for the query build (February 25 2025 - 10:13)
+
+...reading input_hg19.vcf (February 25 2025 - 10:13)
+	* 1 SV given in input
+	* creation of 20250225-101332.tmp.bed with the different coordinates to lift (CHROM:POS, CHROM:END...)
+	  (3 genomic coordinates to lift)
+
+...lifting over 20250225-101332.tmp.bed (February 25 2025 - 10:13)
+	* command line:
+		liftOver ./output/20250225-101332.tmp.bed /PUBLIC_DATA/ReferenceGenomes/Liftover_Chain_Files/hg19ToHg38.over.chain ./output/20250225-101332.tmp.lifted.bed ./output/unMapped
+	* output:
+		Reading liftover chains
+		Mapping coordinates
+
+...memorizing the lifted coordinates (February 25 2025 - 10:13)
+
+...writing temporary output_hg38.tmp.vcf (February 25 2025 - 10:13)
+	* 1 mapped SV
+
+...checking the INFO, FORMAT and FILTER header lines (February 25 2025 - 10:13)
+	* creation of ./output/output_hg38.vcf
+
+...writing output_hg38.sort.vcf.gz (February 25 2025 - 10:13)
+
+...liftoverSV is done with the analysis (February 25 2025 - 10:13)
+ok - Finished

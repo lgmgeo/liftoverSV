@@ -1,2 +1,0 @@
-$LIFTOVERSV/bin/liftoverSV -I ./input_hg19.vcf -O ./output_hg38.vcf -C hg19ToHg38.chr22.over.chain -R /PUBLIC_DATA/ReferenceGenomes/UCSChg38/hg38.fa
-

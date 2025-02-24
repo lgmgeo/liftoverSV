@@ -1,0 +1,8 @@
+##fileformat=VCFv4.4
+##INFO=<ID=EVENT,Number=A,Type=String,Description="ID of associated event">
+##contig=<ID=chr1>
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample
+chr2	321681	bndW	G	G.	6	PASS	.	GT	0/1
+chr2	321681	bndY	G	.G	6	PASS	.	GT	0/1
+chr1	150625563	.	C	.TTTTTTC	.	.	EVENT=single_breakend|INS	GT	0/1

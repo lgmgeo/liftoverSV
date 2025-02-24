@@ -1,5 +1,5 @@
 ############################################################################################################
-# liftoverSV 0.1.2_beta                                                                                    #
+# liftoverSV 0.2.0_beta                                                                                    #
 #                                                                                                          #
 # Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
@@ -22,19 +22,20 @@ For more details, please see the README file.
 
 
 
-Jan, , 2025, liftoverSV version 0.1.3_beta
+Feb, 24, 2025, liftoverSV version 0.2.0_beta
 	- Lift over REF and ALT (sequences + coordinates)
 	- Check if the VCF input file contains multi-allelic lines (not allowed)
 	- Check/Update INFO/CIPOS and INFO/CIEND
+	- Add several tests
 	- Update/create and sort some VCF header lines
 	    - Checks that the "contig" field includes all the ID attributes (do not include additional optional attributes)</br>
 	      e.g. `##contig=<ID=chr22>` added after a lift from chr1 to chr22
 	    - Create/update the "assembly" field
 	      e.g. `##assembly=liftoverSV used with hg19ToHg38.over.chain`
 	    - Create the "liftoverSV_version" field
-	      e.g. `##liftoverSV_version=0.1.2_beta; hg19ToHg38.over.chain; August 30 2024 12:30`
+	      e.g. `##liftoverSV_version=0.2.0_beta; hg19ToHg38.over.chain`
 	    - Update the "INFO", "FORMAT" and "FILTER" fields if one value is missing.
-		  Possible rescues in the \"$LIFTOVERSV/share/doc/liftoverSV/vcf_header_lines.txt"\ file.
+		  Possible rescues in the "$LIFTOVERSV/share/doc/liftoverSV/vcf_header_lines.txt" file.
 		  Else, as the format (Number, String) is not known, "Number=." and "Type=String" values are used by default:
 	      e.g. `##FORMAT=<ID=XXX,Number=.,Type=String,Description="XXX">`
 	      e.g. `##INFO=<ID=YYY,Number=.,Type=String,Description="YYY">`

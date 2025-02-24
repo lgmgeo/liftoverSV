@@ -1,0 +1,48 @@
+# Bash environment
+##################
+
+# The "set -e" option instructs bash to immediately exit if any command has a non-zero exit status.
+# => set -eo pipefail
+
+
+
+# Needs 2 variables to be defined:
+##################################
+
+To run the different tests, $LIFTOVERSV needs 2 variables to be defined:
+- $CHAIN         the "hg19ToHg38.chr22.over.chain"  chain file
+- $REFFASTASEQ   the hg38 reference sequence (fasta) file 
+
+For example:    CHAIN=/<path>/hg19ToHg38.chr22.over.chain
+                REFFASTASEQ=/<path>/hg38.fa
+
+
+
+# Checks only for 1 test directory
+##################################
+
+=> Need to be run in each directory:
+./command.sh $CHAIN $REFFASTASEQ >& command.log
+
+gr error command.log
+
+gr "ok - Finished" command.log
+tail -2 command.log
+
+
+
+
+## Automation of all tests (to check)
+#####################################
+
+./scripts/check_all_public_tests.sh $CHAIN $REFFASTASEQ
+
+
+
+
+## There should no longer be a path in the VCF inputs
+#####################################################
+
+grep [^\\.0-9+-]/[^\\.0-9+-]  test_*/input/*vcf
+
+

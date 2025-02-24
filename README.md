@@ -72,7 +72,7 @@ Lift over a SV VCF file from one reference build to a target build:
    - Case5: The REF and ALT features are represented with complex sequences:
        - Deletion: the REF sequence is not at the beginning of the ALT sequence e.g. `REF="ATTCTTG" and ALT="TC"
        - Insertion: the ALT sequence is not at the beginning of the REF sequence e.g. `REF="TC" and ALT="ATTCTTG"
-
+       - Insertion with a Single Breakend: the REF sequence is not at the opposite side of the "." in the ALT sequence e.g. `REF="G" and ALT=".TTTTTTC"
    => See "OUTPUTFILE.unmapped" file for details
 
 * Check/Update INFO/CIPOS and INFO/CIEND, so that in the target build:
@@ -115,12 +115,14 @@ See section 3: "INFO keys used for structural variants"
 ## liftoverSV: Examples of Authorized Formats
 | CHROM | POS      | REF                | ALT                             | FILTER | INFO                                              |
 | :---: | :------: | :----------------: | :-----------------------------: | :----: | :-----------------------------------------------: |
-| chr22 | 16848506 | G                  | &lt;DEL&gt;| PASS   | END=16848558;SVLEN=52;SVSIZE=52;SVTYPE=DEL        |
+| chr22 | 16848506 | G                  | &lt;DEL&gt;                     | PASS   | END=16848558;SVLEN=52;SVSIZE=52;SVTYPE=DEL        |
 | chr17 | 198982   | G                  | G]chr2:321681]                  | PASS   | SVTYPE=BND;EXTRA=TRA_PAIRED_WITHOUT_MATE_ID       |
 | chr2  | 321681   | G                  | G]chr17:198982]                 | PASS   | SVTYPE=BND;EXTRA=TRA_PAIRED_WITHOUT_MATE_ID       |
 | chr13 | 53040041 | T                  | TATATATATACACAC[chr13:53040042[ | PASS   | SVTYPE=INS                                        |
 | chr1  | 2523792  | ACGCCCCCTCCCCTGCTGTGCTGGCACCC<br/>CCTCCCCTGCCGCGCTGATGCCCCCTCCC<br/>CTGATGCACTGGCGCCCCCTCCCCTGCCA<br/>TGCTGACGCCCCCTCCCCTGCCGTGCTGG<br/>CGCCCCCTCCCC  | A      | PASS | VARTYPE=SV;SVTYPE=DEL;SVLEN=-128 |
 | chr1  | 2524045  | A                  | ATGCCCCCTCCCCTGAGGCACTGGTGCCC<br/>CCCTCCCCTGCAGCGCTGATGCCCCCCCTC<br/>CCCTGCCATGCTGACGCCCCCTCCCCTGAT<br>GCACTGG | LowQUAL | VARTYPE=SV;SVTYPE=INS;SVLEN=95 |
+| chr1  | 150625563| C                  | .TTTTTTC                        | PASS   | EVENT=single_breakend|INS                         |
+| chr2  |  321681  |    G               |  G.                             | PASS   | EVENT=single_breakend
 
 
 ## Feature requested for future release
