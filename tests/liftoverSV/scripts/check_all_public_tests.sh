@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CHAIN=$1
-REFFASTASEQ=$2
+chain=$1
+ref_fasta_seq=$2
 
 for f in test_*/command.sh
 do
@@ -14,7 +14,7 @@ do
     echo "######## $d "
     echo "###############################################################################"
     date
-    ./command.sh $CHAIN $REFFASTASEQ >& command.log
+    ./command.sh $chain $ref_fasta_seq >& command.log
     grep -i error command.log | grep -v "Exit without error"
 
     # diff

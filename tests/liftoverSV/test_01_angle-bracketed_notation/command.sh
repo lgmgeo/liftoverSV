@@ -3,8 +3,8 @@
 set -eo pipefail
 
 
-CHAIN=$1
-REFFASTASEQ=$2
+chain=$1
+ref_fasta_seq=$2
 
 
 # Check a VCF input file with ALT described with an "angle bracketed notation"
@@ -16,16 +16,19 @@ REFFASTASEQ=$2
 # OUTPUT coordinates: chr22:16367844-16367896
 #
 # Checks:
-# ../scripts/extractDNAseq.tcl chr22 16848506 16848558 $hg19_REFFASTASEQ   => gaatggaatcatcaacgaatggaatcgaatggaatcatcgtctaatggaatca
-# ../scripts/extractDNAseq.tcl chr22 16367844 16367896 $hg38_REFFASTASEQ   => gaatggaatcatcaacgaatggaatcgaatggaatcatcgtctaatggaatca
+# ../scripts/extractDNAseq.py chr22 16848506 16848558 $hg19_ref_fasta_seq   => gaatggaatcatcaacgaatggaatcgaatggaatcatcgtctaatggaatca
+# ../scripts/extractDNAseq.py chr22 16367844 16367896 $hg38_ref_fasta_seq   => gaatggaatcatcaacgaatggaatcgaatggaatcatcgtctaatggaatca
+
+# The input VCF header is badly formatted : 
+# Header with "chr1" (##contig=<ID=chr1,length=249250621>) in place of "chr22"
 
 
 
 rm -f ./output/output_hg38.*
 
-$LIFTOVERSV/bin/liftoverSV -I ./input/input_hg19.vcf -O ./output/output_hg38.vcf -C $CHAIN -R $REFFASTASEQ
+python3 $LIFTOVERSV/bin/liftoverSV.py -i ./input/input_hg19.vcf -o ./output/output_hg38.vcf -c $chain -r $ref_fasta_seq
 
-
+  
 gunzip ./output/output_hg38.sort.vcf.gz
 if [ -e ./validated_output/validated_output_hg38.sort.vcf.gz ]
 then
@@ -36,6 +39,9 @@ compare=`diff ./output/output_hg38.sort.vcf validated_output/validated_output_hg
 
 gzip ./output/output_hg38.sort.vcf
 gzip ./validated_output/validated_output_hg38.sort.vcf
+
+echo ""
+echo ""
 
 
 if [ "$compare" ]

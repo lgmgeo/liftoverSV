@@ -1,0 +1,19 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INS,Description="Insertion">
+##ALT=<ID=INV,Description="Inversion">
+##FILTER=<ID=LOW_CALL_RATE,Description="Site does not meet minimum requirements for fraction of PCR- samples with non-null genotypes. Flags sites more prone to false discoveries.">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the structural variant">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="SV length">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##contig=<ID=chr1,length=249250621>
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles genotyped (for biallelic sites) or individuals with copy-state estimates (for multiallelic sites).">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Number of non-reference alleles observed (for biallelic sites) or individuals at each copy state (for multiallelic sites).">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency (for biallelic sites) or copy-state frequency (for multiallelic sites).">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr9	39963000	gnomAD-SV_v2.1_DEL_9_101839	N	<DEL>	1	PASS	END=39974796;SVTYPE=DEL;SVLEN=11796
+chr15	65237824	gnomAD-SV_v2.1_DEL_15_148620	N	<DEL>	402	PASS	END=65238510;SVTYPE=DEL;SVLEN=686
+chr22	16848506	.	N	<DEL:SVSIZE=52:AGGREGATED>	1643	PASS	END=16848558;SVLEN=52;SVSIZE=52;SVTYPE=DEL

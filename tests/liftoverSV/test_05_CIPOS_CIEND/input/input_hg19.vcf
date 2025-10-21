@@ -1,6 +1,6 @@
 ##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
-##contig=<ID=chr1,length=249250621>
+##contig=<ID=chr22>
 ##INFO=<ID=END,Number=1,Type=Integer,Description="End position of an SV.">
 ##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant in bp. Negative lengths indicate a deletion.">
 ##INFO=<ID=SVSIZE,Number=1,Type=Integer,Description="Size of structural variant in bp. Always 50 or more.">

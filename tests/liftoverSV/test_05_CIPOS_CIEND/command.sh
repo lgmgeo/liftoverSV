@@ -16,7 +16,7 @@ set -eo pipefail
 # CIEND = 0,34450600
 
 
-# Size of chr22 with the query build (hg38):
+# Size of chr22 with the target build (hg38):
 ############################################
 # 50818468
 # (indicated in the "hg19ToHg38.over.chain" file)
@@ -24,27 +24,23 @@ set -eo pipefail
 
 # Output VCF
 ############
-# We should obtain in the output:
-
-# chr22   16367844        chr22:16848506:dg       n       <del:svsize=52:aggregated>      1643    pass    end=16367896;svlen=52;svsize=52;svtype=del;cipos=-16367843,0;ciend=0,34450572        gt      0/1     1/1
-
+# chr22   16367844   chr22:16848506:DG    N    <DEL:SVSIZE=52:AGGREGATED>    1643    PASS    END=16367896;SVLEN=52;SVSIZE=52;SVTYPE=DEL;CIPOS=-16367843,0;CIEND=0,34450572        GT      0/1     1/1
 #
 # chrom = chr22
-# pos = 16367844
-# end = 16367896
-# svlen = 52
-# svsize = 52
-# cipos = -16367843,0 
-# ciend = 0,34450572 
+# POS = 16367844
+# END = 16367896
+# SVLEN = 52
+# SVSIZE = 52
+# CIPOS = -16367843,0 = -(POS - 1)),0
+# CIEND = 0,34450572 = 0,(chr22_size - END) = 0,(50818468 - 16367896)
 
-
-CHAIN=$1
-REFFASTASEQ=$2
+chain=$1
+ref_fasta_seq=$2
 
 
 rm -f ./output/output_hg38.*
 
-$LIFTOVERSV/bin/liftoverSV -I ./input/input_hg19.vcf -O ./output/output_hg38.vcf -C $CHAIN -R $REFFASTASEQ
+python3 $LIFTOVERSV/bin/liftoverSV.py -i ./input/input_hg19.vcf -o ./output/output_hg38.vcf -c $chain -r $ref_fasta_seq
 
 
 

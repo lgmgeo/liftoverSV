@@ -1,0 +1,4 @@
+chr1	1234567	bnd_X_not_lifted	N	.[chr13:123457[	6	PASS	ALT not lifted
+chr1	1234568	bnd_Y_not_lifted	T	]chr13:123456]T	6	PASS	ALT not lifted
+chr13	123456	bnd_U_not_lifted	C	C[chr1:1234568[	6	PASS	POS not lifted
+chr13	123457	bnd_V_not_lifted	A	]chr1:1234567]A	6	PASS	POS not lifted

@@ -3,8 +3,8 @@
 set -eo pipefail
 
 
-CHAIN=$1
-REFFASTASEQ=$2
+chain=$1
+ref_fasta_seq=$2
 
 # INPUT: => 2 SV (1 unmapped + 1 mapped)
 # chr10   46951150        .       TGTGTGTGTGTGTGTGTGTGTG  [chrX:96440306[ATATAT   70950   GraphtyperFilter;inf50bp        END=46951170;AN=1698;AC=900     GT      0/1     0/1
@@ -25,7 +25,7 @@ REFFASTASEQ=$2
 
 rm -f ./output/output_hg38.*
 
-$LIFTOVERSV/bin/liftoverSV -I ./input/input_hg19.vcf -O ./output/output_hg38.vcf -C $CHAIN -R $REFFASTASEQ
+python3 $LIFTOVERSV/bin/liftoverSV.py -i ./input/input_hg19.vcf -o ./output/output_hg38.vcf -c $chain -r $ref_fasta_seq
 
 
 compare=`diff ./output/output_hg38.unmapped validated_output/validated_output_hg38.unmapped || true`

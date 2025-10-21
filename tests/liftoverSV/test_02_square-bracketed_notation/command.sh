@@ -3,8 +3,8 @@
 set -eo pipefail
 
 
-CHAIN=$1
-REFFASTASEQ=$2
+chain=$1
+ref_fasta_seq=$2
 
 
 # Check a VCF input file with ALT described with "square bracketed notation"
@@ -18,7 +18,7 @@ REFFASTASEQ=$2
 
 rm -f ./output/output_hg38.*
 
-$LIFTOVERSV/bin/liftoverSV -I ./input/input_hg19.vcf -O ./output/output_hg38.vcf -C $CHAIN -R $REFFASTASEQ
+python3 $LIFTOVERSV/bin/liftoverSV.py -i ./input/input_hg19.vcf -o ./output/output_hg38.vcf -c $chain -r $ref_fasta_seq
 
 
 gunzip ./output/output_hg38.sort.vcf.gz

@@ -1,3 +1,0 @@
-$LIFTOVERSV/bin/liftoverSV -I input_TRA.hg19.vcf  -O ./output_hg38.vcf -C $CHAIN -R $REFFASTASEQ
-
-

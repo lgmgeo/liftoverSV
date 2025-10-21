@@ -1,5 +1,5 @@
 ############################################################################################################
-# liftoverSV 0.2.0_beta                                                                                    #
+# liftoverSV 0.3.0_beta                                                                                    #
 #                                                                                                          #
 # Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
@@ -20,7 +20,10 @@
 
 For more details, please see the README file.
 
-
+Dec, 01, 2025, liftoverSV version 0.3.0_beta
+	- Reimplementation in Python
+		- Remove dependencies: bcftools, bedtools...
+		- improvements: chunks, n_workers
 
 Feb, 24, 2025, liftoverSV version 0.2.0_beta
 	- Lift over REF and ALT (sequences + coordinates)

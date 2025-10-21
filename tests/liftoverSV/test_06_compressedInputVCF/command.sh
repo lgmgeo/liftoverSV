@@ -3,18 +3,18 @@
 set -eo pipefail
 
 
-CHAIN=$1
-REFFASTASEQ=$2
+chain=$1
+ref_fasta_seq=$2
 
 
 rm -f ./output/output_hg38.*
 
 # Check a compressed VCF in input
-$LIFTOVERSV/bin/liftoverSV -I ./input/input_hg19.vcf.gz -O ./output/output_hg38.vcf.gz -C $CHAIN -R $REFFASTASEQ
 
 # Check different equivalent output file names
-$LIFTOVERSV/bin/liftoverSV -I ./input/input_hg19.vcf.gz -O ./output/output_hg38.vcf.gz -C $CHAIN -R $REFFASTASEQ
-$LIFTOVERSV/bin/liftoverSV -I ./input/input_hg19.vcf.gz -O ./output/output_hg38.sort.vcf.gz -C $CHAIN -R $REFFASTASEQ
+python3 $LIFTOVERSV/bin/liftoverSV.py -i ./input/input_hg19.vcf.gz -o ./output/output_hg38.vcf.gz -c $chain -r $ref_fasta_seq
+python3 $LIFTOVERSV/bin/liftoverSV.py -i ./input/input_hg19.vcf.gz -o ./output/output_hg38.sort.vcf.gz -c $chain -r $ref_fasta_seq
+python3 $LIFTOVERSV/bin/liftoverSV.py -i ./input/input_hg19.vcf.gz -o ./output/output_hg38 -c $chain -r $ref_fasta_seq
 
 
 

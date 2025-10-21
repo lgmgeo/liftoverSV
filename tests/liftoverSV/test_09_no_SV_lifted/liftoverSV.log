@@ -1,57 +1,47 @@
 
-liftoverSV 0.2.0_beta
+liftoverSV 0.3.0_beta
 Copyright (C) 2024-current GEOFFROY Veronique
-Please feel free to create a Github issue for any suggestions or bug reports (https://github.com/lgmgeo/liftoverSV/issues)
+Please feel free to create a Github issue for any suggestions or bug reports
+https://github.com/lgmgeo/liftoverSV/issues
 
-Tcl/Tk version: 8.6
+
+Python version: 3.8.13 
 
 Application name used:
-/WORKING_DIRECTORY/vgeoffroy/liftoverSV/liftoverSV_dev
+/WORKING_DIRECTORY/vgeoffroy/liftoverSV/liftoverSV_dev 
 
 
-...loading configuration data (February 25 2025 - 10:13)
-
-...checking configuration data (February 25 2025 - 10:13)
-
-...listing arguments
-	*********************************************
-	liftoverSV has been run with these arguments:
-	*********************************************
-	--BCFTOOLS bcftools
-	--BEDTOOLS bedtools
-	--CHAIN /PUBLIC_DATA/ReferenceGenomes/Liftover_Chain_Files/hg19ToHg38.over.chain
-	--INPUTFILE ./input/input_hg19.vcf
-	--LIFTOVER liftOver
-	--OUTPUTDIR ./output
-	--OUTPUTFILE ./output/output_hg38.vcf
-	--PERCENT 0.05
-	--REFFASTASEQ /PUBLIC_DATA/ReferenceGenomes/UCSChg38/hg38.fa
-	*********************************************
-
-...checking the REFFASTASEQ file (February 25 2025 - 10:13)
-
-...memorizing the size of the chromosomes for the query build (February 25 2025 - 10:13)
-
-...reading input_hg19.vcf (February 25 2025 - 10:13)
-	* 1 SV given in input
-	* creation of 20250225-101335.tmp.bed with the different coordinates to lift (CHROM:POS, CHROM:END...)
-	  (4 genomic coordinates to lift)
-
-...lifting over 20250225-101335.tmp.bed (February 25 2025 - 10:13)
-	* command line:
-		liftOver ./output/20250225-101335.tmp.bed /PUBLIC_DATA/ReferenceGenomes/Liftover_Chain_Files/hg19ToHg38.over.chain ./output/20250225-101335.tmp.lifted.bed ./output/unMapped
-	* output:
-		Reading liftover chains
-		Mapping coordinates
-
-...memorizing the lifted coordinates (February 25 2025 - 10:13)
-
-...writing temporary output_hg38.tmp.vcf (February 25 2025 - 10:13)
-	* 0 mapped SV
-
-...unmapped SV (see output_hg38.unmapped for details):
-	* 1 unmapped SV
-	- 1 SV with "lifted start" > "lifted end"
-
-...No SV lifted!
-	Exit without error
+[12:34:20] Listing arguments
+           *********************************************
+           liftoverSV has been run with these arguments:
+           *********************************************
+           --chain /PUBLIC_DATA/ReferenceGenomes/Liftover_Chain_Files/hg19ToHg38.over.chain
+           --chunk-size 50000
+           --input-file ./input/input_hg19.vcf
+           --n-workers 8
+           --output-base-name ./output/output_hg38
+           --output-dir ./output
+           --output-file ./output/output_hg38.sort.vcf.gz
+           --percent 0.05
+           --ref-fasta-seq /PUBLIC_DATA/ReferenceGenomes/UCSChg38/hg38.fa
+           --verbose False
+           *********************************************
+[12:34:20] Ensuring that the input VCF contains only biallelic variants
+[12:34:20] Checking the ref_fasta_seq file
+[12:34:20] Loading the size of the chromosomes of the target build
+           (parsing hg19ToHg38.over.chain)
+[12:34:20] Initializing a temporary VCF output file for unsorted mapped variants
+           /tmp/tmpx4pc3938.liftoverSV.tmp.vcf
+[12:34:20] Initializing the output unmapped file
+           ./output/output_hg38.unmapped
+[12:34:20] Reading input VCF: ./input/input_hg19.vcf
+[12:34:20] Lift over SV:
+           Writing to /tmp/tmpx4pc3938.liftoverSV.tmp.vcf
+           Writing to ./output/output_hg38.unmapped
+[12:34:20] Processing 1 chunks (target chunk size: 50000 lines)
+[12:34:21] Liftover summary:
+           * 0 mapped SV
+           * 1 unmapped SV
+           (see ./output/output_hg38.unmapped for details)
+             - 1 SVs where lifted positions are in reverse order
+[12:34:21] Liftover completed successfully.

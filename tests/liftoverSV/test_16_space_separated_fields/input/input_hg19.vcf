@@ -1,0 +1,10 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##contig=<ID=chr1,length=249250621>
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of an SV.">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant in bp. Negative lengths indicate a deletion.">
+##INFO=<ID=SVSIZE,Number=1,Type=Integer,Description="Size of structural variant in bp. Always 50 or more.">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant.">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="GenoType call. ./. is called if there is no coverage at the variant site.">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample1	sample2
+chr22    16848506    chr22:16848506:DG    N    <DEL:SVSIZE=52:AGGREGATED>    1643    PASS     END=16848558;SVLEN=52;SVSIZE=52;SVTYPE=DEL    GT    0/1    1/1

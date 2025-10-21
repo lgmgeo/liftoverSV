@@ -1,5 +1,17 @@
+# temporary files
 *~
 
+# Personal README
+README.vero
+
+# Personal test
 test_00*
 
+
+# Byte-compiled
+__pycache__/
+*.py[cod]
+
+# VS Code
+.vscode/
 
