@@ -78,7 +78,7 @@ class VcfSorter:
         chunk.sort(key=lambda line: (natural_sort_key(line.split("\t")[0]), int(line.split("\t")[1])))
 
         # Create a temporary file for the sorted chunk
-        tmp_path = tempfile.NamedTemporaryFile(delete=False, suffix=f".chunk{chunk_id}.vcf").name
+        tmp_path = tempfile.NamedTemporaryFile(delete=False, dir=g_liftoverSV["tmp_dir"], suffix=f".chunk{chunk_id}.vcf").name
 
         # Use BatchWriter to write lines efficiently with buffered I/O
         writer = BatchWriter(tmp_path, g_liftoverSV)

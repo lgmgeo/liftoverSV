@@ -7,6 +7,7 @@
 
 
 
+- [Requirements](#requirements)
 - [Quick Installation](#quick-installation)
 - [Command line usage / Options](#command-line-usage--options)
 - [Outputs](#outputs)
@@ -15,6 +16,7 @@
 - [Criteria for dropping SVs during liftover](#criteria-for-dropping-svs-during-liftover)
 - [Handling IDs for lifted SVs](#handling-ids-for-lifted-svs)
 - [Examples of authorized formats](#examples-of-authorized-formats)
+- [Tests](#tests)
 - [SV representation in VCF files](#sv-representation-in-vcf-files)
 
 
@@ -86,6 +88,9 @@ Behavior:
   -p <float>, --percent <float>
                         variation in length authorized for a lifted SV (e.g. difference max between both SVLENs < 5%)
                         default value: 0.05
+  -T <Dir>, --tmp-dir <Dir>
+                        Directory where temporary files will be created.
+                            If not provided, the system default temporary directory is used.
   -v, --verbose         enable verbose output
 ```
 
@@ -196,7 +201,13 @@ Since the ID values are essential to track SV across the different genome build 
 | chr2  |  321681  |    G               |  G.                             | PASS   | EVENT=single_breakend
 
 
-  
+## Tests
+A set of tests is included to ensure the correct functioning of liftoverSV. <br>
+The test scripts are located in the tests/liftoverSV/ directory. <br> <br>
+
+Running them after installation or before submitting changes is recommended to verify that everything works as expected.
+
+
 ## SV representation in VCF files
 cf https://samtools.github.io/hts-specs/VCFv4.4.pdf</br>
 See section 3: "INFO keys used for structural variants"

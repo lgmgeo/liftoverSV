@@ -24,6 +24,7 @@ import re
 import subprocess
 import shutil
 import argparse
+import tempfile
 from io_tools.file_utils import is_an_empty_vcf_file, file_with_chr, check_vcf_variant_line_format, print_flush as print
 from functools import partial
 from core.constants import CHUNK_SIZE, N_WORKERS
@@ -198,7 +199,7 @@ def valid_percent(value):
     return percent
 
 
-def valid_output_base_name(output_base_name, g_liftoverSV):
+def valid_output_base_name(output_base_name):
     """
     Validate and normalize the output-file path.
     
@@ -302,7 +303,7 @@ default: current directory"""
 
     group_output.add_argument(
         "-o", "--output-base-name", dest="output_base_name",
-        type=partial(valid_output_base_name, g_liftoverSV=g_liftoverSV),
+        type=partial(valid_output_base_name),
         required=True,
         metavar="<File>",
         help="""Base name for output (generates FILE.sort.vcf.gz and FILE.unmapped)
@@ -346,6 +347,14 @@ default value: 0.05"""
     )
 
     group_behavior.add_argument(
+        "-T", "--tmp-dir", dest="tmp_dir",
+        type=str,
+        metavar="<Dir>",
+        help="""Directory where temporary files will be created.
+    If not provided, the system default temporary directory is used."""
+    )
+
+    group_behavior.add_argument(
         "-v", "--verbose",
         action="store_true",
         help="enable verbose output"
@@ -364,7 +373,16 @@ default value: 0.05"""
     ###########################################
     g_liftoverSV.update(vars(args))
 
-
+    # Check tmp_dir
+    ###############
+    # Determine tmp_dir
+    if g_liftoverSV["tmp_dir"] is None:
+        g_liftoverSV["tmp_dir"] = tempfile.gettempdir()  # default system tmp
+    else:
+        # Ensure directory exists
+        if not os.path.isdir(g_liftoverSV["tmp_dir"]):
+            raise ValueError(f"Temporary directory does not exist: {g_liftoverSV['tmp_dir']}")
+    
     # Determine output_dir if not given in argument
     ###############################################
     if g_liftoverSV["output_dir"] == None:

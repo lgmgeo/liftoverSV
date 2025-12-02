@@ -153,7 +153,7 @@ def write_the_lifted_vcf(g_liftoverSV):
 
     # Create a temporary VCF output file for mapped variants unsort (no header lines)
     print(f"[{time.strftime('%H:%M:%S')}] Initializing a temporary VCF output file for unsorted mapped variants")
-    tmp_output_file = tempfile.NamedTemporaryFile(delete=False, suffix=f".liftoverSV.tmp.vcf").name
+    tmp_output_file = tempfile.NamedTemporaryFile(delete=False, dir=g_liftoverSV["tmp_dir"], suffix=f".liftoverSV.tmp.vcf").name
     print(f"           {tmp_output_file}")
     tmp_out_writer = BatchWriter(tmp_output_file, g_liftoverSV)    
 
