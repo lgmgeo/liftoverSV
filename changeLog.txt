@@ -1,5 +1,5 @@
 ############################################################################################################
-# liftoverSV 0.3.0_beta                                                                                    #
+# liftoverSV 0.3.1_beta                                                                                    #
 #                                                                                                          #
 # Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             #
 #                                                                                                          #
@@ -19,6 +19,11 @@
 
 
 For more details, please see the README file.
+
+Dec, 02, 2025, liftoverSV version 0.3.1_beta
+	- Add the --tmp-dir option 
+	- Update of the requirements 
+	- Fix chunk_size handling during VCF processing 
 
 Dec, 01, 2025, liftoverSV version 0.3.0_beta
 	- Reimplementation in Python

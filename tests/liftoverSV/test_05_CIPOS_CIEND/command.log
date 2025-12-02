@@ -1,5 +1,5 @@
 
-liftoverSV 0.3.0_beta
+liftoverSV 0.3.1_beta
 Copyright (C) 2024-current GEOFFROY Veronique
 Please feel free to create a Github issue for any suggestions or bug reports
 https://github.com/lgmgeo/liftoverSV/issues
@@ -11,7 +11,7 @@ Application name used:
 /WORKING_DIRECTORY/vgeoffroy/liftoverSV/liftoverSV_dev 
 
 
-[12:34:13] Listing arguments
+[15:29:42] Listing arguments
            *********************************************
            liftoverSV has been run with these arguments:
            *********************************************
@@ -24,32 +24,33 @@ Application name used:
            --output-file ./output/output_hg38.sort.vcf.gz
            --percent 0.05
            --ref-fasta-seq /PUBLIC_DATA/ReferenceGenomes/UCSChg38/hg38.fa
+           --tmp-dir /tmp
            --verbose False
            *********************************************
-[12:34:13] Ensuring that the input VCF contains only biallelic variants
-[12:34:13] Checking the ref_fasta_seq file
-[12:34:13] Loading the size of the chromosomes of the target build
+[15:29:42] Ensuring that the input VCF contains only biallelic variants
+[15:29:42] Checking the ref_fasta_seq file
+[15:29:42] Loading the size of the chromosomes of the target build
            (parsing hg19ToHg38.over.chain)
-[12:34:13] Initializing a temporary VCF output file for unsorted mapped variants
-           /tmp/tmp9a4gjqt0.liftoverSV.tmp.vcf
-[12:34:13] Initializing the output unmapped file
+[15:29:42] Initializing a temporary VCF output file for unsorted mapped variants
+           /tmp/tmpeda7vrr1.liftoverSV.tmp.vcf
+[15:29:42] Initializing the output unmapped file
            ./output/output_hg38.unmapped
-[12:34:13] Reading input VCF: ./input/input_hg19.vcf
-[12:34:13] Lift over SV:
-           Writing to /tmp/tmp9a4gjqt0.liftoverSV.tmp.vcf
+[15:29:42] Reading input VCF: ./input/input_hg19.vcf
+[15:29:42] Lift over SV:
+           Writing to /tmp/tmpeda7vrr1.liftoverSV.tmp.vcf
            Writing to ./output/output_hg38.unmapped
-[12:34:13] Processing 1 chunks (target chunk size: 50000 lines)
-[12:34:14] Liftover summary:
+[15:29:42] Processing 1 chunks (target chunk size: 50000 lines)
+[15:29:43] Liftover summary:
            * 1 mapped SV
            * 0 unmapped SV
-[12:34:14] Writing header in the ./output/output_hg38.sort.vcf.gz
+[15:29:43] Writing header in the ./output/output_hg38.sort.vcf.gz
            => Updating (if needed) the INFO, FORMAT and FILTER header lines
            => Updating (if needed) the contigs header lines
            => Adding information about the use of liftoverSV
            => Adding/Updating the reference header line
-[12:34:14] Sorting and compressing the VCF output file
-           => Reading VCF to sort: /tmp/tmp9a4gjqt0.liftoverSV.tmp.vcf
+[15:29:43] Sorting and compressing the VCF output file
+           => Reading VCF to sort: /tmp/tmpeda7vrr1.liftoverSV.tmp.vcf
            => Writing ./output/output_hg38.sort.vcf.gz
-[12:34:14] Removing /tmp/tmp9a4gjqt0.liftoverSV.tmp.vcf
-[12:34:14] Liftover completed successfully.
+[15:29:43] Removing /tmp/tmpeda7vrr1.liftoverSV.tmp.vcf
+[15:29:43] Liftover completed successfully.
 ok - Finished

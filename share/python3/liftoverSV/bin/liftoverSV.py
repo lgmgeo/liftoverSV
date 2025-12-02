@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-liftoverSV 0.3.0_beta 
+liftoverSV 0.3.1_beta 
 =====================
 
 Copyright (C) 2024-current Veronique Geoffroy (veronique.geoffroy@inserm.fr)                             
