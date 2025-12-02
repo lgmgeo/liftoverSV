@@ -18,8 +18,18 @@
 - [SV representation in VCF files](#sv-representation-in-vcf-files)
 
 
+## Requirements
+
+liftoverSV requires the following Python packages:
+```
+pyfaidx==0.9.0.3
+pyliftover==0.4.1
+```
+These dependencies ensure efficient VCF parsing, sequence extraction, liftover operations, and high-performance data handling.
+
+
+
 ## Quick Installation
-A clean, portable requirements.txt file is available in the Python project.</br>
 
 The sources can be cloned to any directory:
 ```
