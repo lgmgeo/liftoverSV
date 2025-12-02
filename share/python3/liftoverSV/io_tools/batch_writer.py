@@ -19,8 +19,9 @@ along with this program; If not, see <http://www.gnu.org/licenses/>.
 """
 
 import os
-from core.constants import CHUNK_SIZE
 import gzip
+from typing import Dict, Any
+
 
 
 # Usage:
@@ -34,21 +35,21 @@ import gzip
 class BatchWriter:
     """
     Lines are accumulated in memory and written to disk in batches to reduce I/O operations. 
-    (automatically flushes to disk every `CHUNK_SIZE` lines)
+    (automatically flushes to disk every 'g_liftoverSV["chunk-size"]' lines)
     Remember to call `close()` at the end to flush any remaining lines.
     """
 
-    def __init__(self, filepath: str, chunk_size: int = CHUNK_SIZE):
+    def __init__(self, filepath: str, g_liftoverSV: Dict[str, Any]):
         """
         Initialize a BatchWriter.
 
         Args:
             filepath (str): Path to the output file.
-            chunk_size (int, optional): Number of lines to accumulate before writing to disk. Defaults to CHUNK_SIZE.
+            g_liftoverSV
         """
 
         self.filepath = filepath
-        self.chunk_size = chunk_size
+        self.chunk_size = g_liftoverSV["chunk_size"]
         # _buffer <=> internal attribute.
         # leading underscore => should not be accessed directly from outside the class.
         # Use the public methods (e.g., write, flush) to interact with the buffer instead.

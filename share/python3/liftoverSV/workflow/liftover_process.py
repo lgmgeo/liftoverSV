@@ -30,7 +30,6 @@ from core.liftover_engine import LiftoverEngine, Variant
 from core.header_tools import extract_header_ids
 from workflow.output_writer import add_new_header_lines, sort_and_compress_the_lifted_vcf
 from multiprocessing import Pool, cpu_count
-from core.constants import CHUNK_SIZE
 
 def process_chunk(chunk, g_liftoverSV):
     """
@@ -156,7 +155,7 @@ def write_the_lifted_vcf(g_liftoverSV):
     print(f"[{time.strftime('%H:%M:%S')}] Initializing a temporary VCF output file for unsorted mapped variants")
     tmp_output_file = tempfile.NamedTemporaryFile(delete=False, suffix=f".liftoverSV.tmp.vcf").name
     print(f"           {tmp_output_file}")
-    tmp_out_writer = BatchWriter(tmp_output_file)    
+    tmp_out_writer = BatchWriter(tmp_output_file, g_liftoverSV)    
 
     # Initialize a BatchWriter for the unmapped file
     print(f"[{time.strftime('%H:%M:%S')}] Initializing the output unmapped file")
@@ -164,7 +163,7 @@ def write_the_lifted_vcf(g_liftoverSV):
     unmapped_file = re.sub(r"\.sort\.vcf.gz$", ".unmapped", output_file)
     if os.path.exists(unmapped_file):
         os.remove(unmapped_file)
-    unmapped_writer = BatchWriter(unmapped_file)
+    unmapped_writer = BatchWriter(unmapped_file, g_liftoverSV)
     print(f"           {unmapped_file}")
 
     # Input VCF (gzipped or not)
@@ -204,14 +203,14 @@ def write_the_lifted_vcf(g_liftoverSV):
                 S_header_INFO, S_header_FORMAT, S_header_FILTER = extract_header_ids(line, S_header_INFO, S_header_FORMAT, S_header_FILTER)
             else:
                 chunk.append((vcf_line_number, line))
-                if len(chunk) >= CHUNK_SIZE:
+                if len(chunk) >= g_liftoverSV["chunk_size"]:
                     L_chunks.append(chunk)
                     chunk = []                  
         if chunk:
             L_chunks.append(chunk)
 
     total_chunks = len(L_chunks)
-    print(f"[{time.strftime('%H:%M:%S')}] Processing {total_chunks} chunks (target chunk size: {CHUNK_SIZE} lines)")
+    print(f"[{time.strftime('%H:%M:%S')}] Processing {total_chunks} chunks (target chunk size: {g_liftoverSV['chunk_size']} lines)")
 
 
     # Determine the number of workers to use: 

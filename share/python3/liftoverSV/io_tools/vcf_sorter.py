@@ -26,7 +26,6 @@ import time
 from typing import List
 from io_tools.file_utils import natural_sort_key, print_flush as print
 from io_tools.batch_writer import BatchWriter
-from core.constants import CHUNK_SIZE 
 
 class VcfSorter:
     """
@@ -44,7 +43,7 @@ class VcfSorter:
     - overwrite=False:   the new content will be appended to the existing file (mode "at"), and the header is not rewritten to avoid duplicates.
     """
 
-    def __init__(self, vcf_to_sort: str, sorted_vcf: str, overwrite: bool = True, chunk_size: int = CHUNK_SIZE):
+    def __init__(self, vcf_to_sort: str, sorted_vcf: str, overwrite: bool = True):
         """
         Initialize the sorter.
 
@@ -52,15 +51,10 @@ class VcfSorter:
             vcf_to_sort (str): Path to the input (unsorted) VCF file.
             sorted_vcf (str): Path to the output (sorted) VCF file (.vcf or .vcf.gz).
             overwrite (bool): If False, will append to the existing file instead of overwriting.
-            chunk_size (int): Number of variants per chunk to sort in memory.
-                              The higher this value, the faster (but more RAM).
-                              (default: CHUNK_SIZE).
-
         """
         self.vcf_to_sort = vcf_to_sort
         # Always ensure output file ends with .vcf.gz for compression
         self.sorted_vcf = sorted_vcf if sorted_vcf.endswith(".vcf.gz") else sorted_vcf + ".vcf.gz"
-        self.chunk_size = chunk_size
         self.overwrite = overwrite
         # Temporary files created for each sorted chunk
         self.temp_files: List[str] = []
@@ -71,22 +65,23 @@ class VcfSorter:
     # ----------------------------------------------------------
     # Internal helper: sort one chunk and write it to a temp file
     # ----------------------------------------------------------
-    def _sort_and_save_chunk(self, chunk, chunk_id):
+    def _sort_and_save_chunk(self, chunk, chunk_id, g_liftoverSV):
         """
         Sort a chunk of variants in memory, then save it to a temporary gzipped VCF file.
 
         Args:
             chunk (list): List of cyvcf2.Variant objects.
             chunk_id (int): Identifier used to name the temporary file.
+            g_liftoverSV
         """
         # Sort by (chromosome, position) using natural sorting
         chunk.sort(key=lambda line: (natural_sort_key(line.split("\t")[0]), int(line.split("\t")[1])))
 
         # Create a temporary file for the sorted chunk
-        tmp_path = tempfile.NamedTemporaryFile(delete=False, suffix=f".chunk{chunk_id}.vcf.gz").name
+        tmp_path = tempfile.NamedTemporaryFile(delete=False, suffix=f".chunk{chunk_id}.vcf").name
 
         # Use BatchWriter to write lines efficiently with buffered I/O
-        writer = BatchWriter(tmp_path, chunk_size=self.chunk_size)
+        writer = BatchWriter(tmp_path, g_liftoverSV)
         for v in chunk:
             writer.write(str(v).strip())
         writer.close()
@@ -103,13 +98,14 @@ class VcfSorter:
 
         Args:
             header_lines (list): Header lines from the input VCF (##meta + #CHROM).
+            g_liftoverSV
         """
         if g_liftoverSV["verbose"]:
             c = "chunk" if len(self.temp_files) == 1 else "chunks"
             print(f"--verbose-- Merging {len(self.temp_files)} sorted {c}")
 
-        # Open gzip readers for all temporary chunk files
-        readers = [gzip.open(f, "rt") for f in self.temp_files]
+        # Open readers for all temporary chunk files
+        readers = [open(f, "rt") for f in self.temp_files]
 
         # Déterminer le mode d'ouverture selon overwrite
         mode = "wt" if self.overwrite else "at"
@@ -180,14 +176,14 @@ class VcfSorter:
                     chunk.append(line.strip())
 
                     # When chunk is full -> sort and write to temporary file
-                    if len(chunk) >= self.chunk_size:
-                        self._sort_and_save_chunk(chunk, chunk_id)
+                    if len(chunk) >= g_liftoverSV["chunk_size"]:
+                        self._sort_and_save_chunk(chunk, chunk_id, g_liftoverSV)
                         chunk = []
                         chunk_id += 1
 
         # Write remaining SV in the final (possibly partial) chunk
         if chunk:
-            self._sort_and_save_chunk(chunk, chunk_id)
+            self._sort_and_save_chunk(chunk, chunk_id, g_liftoverSV)
 
         # Once all chunks are saved, merge them into final sorted file
         self._merge_sorted_chunks(header_lines, g_liftoverSV)
