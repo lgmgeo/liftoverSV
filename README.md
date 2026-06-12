@@ -90,8 +90,15 @@ Behavior:
                         default value: 0.05
   -T <Dir>, --tmp-dir <Dir>
                         Directory where temporary files will be created.
-                            If not provided, the system default temporary directory is used.
+                        If not provided, the system default temporary directory is used.
+
   -v, --verbose         enable verbose output
+
+  -D <string>, --drop-info-fields <string>
+                        Comma-separated list of INFO fields to remove from
+                        the output VCF. Corresponding INFO header entries and
+                        SV INFO field annotations are removed.
+
 ```
 
 ## Outputs

@@ -228,4 +228,43 @@ def open_any_text_file(path):
         return open(path, "rt")        # plain-text file
 
 
+def drop_info_fields(line, g_liftoverSV):
+    """
+    Drop the fields from a line et return it
+    """
+            
+    #Liste qui va répertorier les fields à supprimer
+    if g_liftoverSV['drop_info_fields']==None:
+        return line
+        
+    fields_list = set(g_liftoverSV["drop_info_fields"].split(","))
+    
+    #Séparation des champs de la ligne str
+    fields = line.split("\t")
+    info  = fields[7].split(";")
+    new_info = []
+    
+    #Boucle qui parse les variants et les fields à supprimer
+    for i in range(len(info)):
+        key=info[i].split("=")[0]    
+        if key not in fields_list:
+            new_info.append(info[i])
+    
+    #Réécriture du champ INFO        
+    fields[7]=";".join(new_info)
+    return "\t".join(fields)
 
+
+def check_header_field(line, g_liftoverSV):
+    """Check if the header line contains the fields to drop and return TRUE or FALSE"""
+    
+    if g_liftoverSV['drop_info_fields']==None:
+        return False
+    fields = g_liftoverSV["drop_info_fields"].split(",")
+    start=""
+    for field in fields:
+        start=f"##INFO=<ID={field}"
+        if line.startswith(start):
+            return True
+                
+    return False
