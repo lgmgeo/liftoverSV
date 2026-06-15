@@ -22,7 +22,7 @@ import sys
 import re
 import time
 import tempfile
-from io_tools.file_utils import open_any_text_file, print_flush as print, check_header_field, drop_info_fields
+from io_tools.file_utils import open_any_text_file, print_flush as print, drop_info_fields, remove_tags_with_genomic_coordinates
 from io_tools.batch_writer import BatchWriter
 from io_tools.chain_lifter import ChainLifter
 from io_tools.fasta_extractor import FastaExtractor
@@ -196,6 +196,18 @@ def write_the_lifted_vcf(g_liftoverSV):
     case_counts = {f"case{i}": 0 for i in range(1, 6)}
     
     new_line = ""
+    
+    if g_liftoverSV["remove_coordinates"]:
+        tags=remove_tags_with_genomic_coordinates(input_file)
+    else:
+        tags=""
+        
+    if g_liftoverSV["drop_info_fields"] is not None:
+        if tags !="":
+            g_liftoverSV["drop_info_fields"]+="," + tags
+    else:
+        g_liftoverSV["drop_info_fields"]=tags
+
     
     with open_any_text_file(input_file) as f:
         for vcf_line_number, line in enumerate(f, 1):

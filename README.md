@@ -98,6 +98,9 @@ Behavior:
                         Comma-separated list of INFO fields to remove from
                         the output VCF. Corresponding INFO header entries and
                         SV INFO field annotations are removed.
+  
+  -R, --remove-coordinates
+                        Remove INFO fields containing genomic coordinates from both SV records and VCF header entries.
 
 ```
 

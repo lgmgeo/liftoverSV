@@ -365,6 +365,13 @@ default value: 0.05"""
         type=str,
         help="Comma-separated list of INFO fields to remove from the output VCF"
     )
+    
+    group_behavior.add_argument(
+        "-R", "--remove-coordinates",dest="remove_coordinates",
+        action="store_true",
+        help="Remove INFO fields containing genomic coordinates from both SV records and VCF header entries",
+        default=False
+    )
 
     # Parsing of the arguments
     ##########################
