@@ -61,7 +61,7 @@ class BatchWriter:
         self._is_gzip = filepath.endswith(".gz")
 
         # Ensure directory exists
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        os.makedirs(os.path.dirname(filepath) or ".", exist_ok=True)
 
 
 

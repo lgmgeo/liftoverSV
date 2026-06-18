@@ -9,6 +9,10 @@
 
 - [Requirements](#requirements)
 - [Quick Installation](#quick-installation)
+  - [Install with poetry](#install-with-poetry)
+  - [Install from PyPI](#install-from-pypi)
+  - [Install from GitHub](#install-from-github)
+  - [Upgrade](#upgrade)
 - [Command line usage / Options](#command-line-usage--options)
 - [Outputs](#outputs)
 - [How to cite?](#how-to-cite)
@@ -22,23 +26,26 @@
 
 ## Requirements
 
-liftoverSV requires the following Python packages:
 ```
+python >=3.8
+poetry #(https://python-poetry.org/docs/#installation)
 pyfaidx==0.9.0.3
 pyliftover==0.4.1
 ```
-These dependencies ensure efficient VCF parsing, sequence extraction, liftover operations, and high-performance data handling.
-
-
 
 ## Quick Installation
 
-The sources can be cloned to any directory:
-```
-cd /path/to/install/
-git clone git@github.com:lgmgeo/liftoverSV.git
+### Install with poetry
 
-```
+### Install from PyPI
+pip3 install liftoverSV
+
+### Install from GitHub
+pip3 install git@github.com:lgmgeo/liftoverSV.git
+
+### Upgrade 
+pip3 install liftoverSV --upgrade
+
 
 
 ## Command line usage / Options
@@ -71,7 +78,7 @@ Output options:
                         the liftover SV VCF output directory
                         default: current directory
   -o <File>, --output-base-name <File>
-                        Base name for output (generates FILE.sort.vcf.gz and FILE.unmapped)
+                        base name for output (generates FILE.sort.vcf.gz and FILE.unmapped)
                         required
 
 Performance:
@@ -91,7 +98,6 @@ Behavior:
   -T <Dir>, --tmp-dir <Dir>
                         Directory where temporary files will be created.
                         If not provided, the system default temporary directory is used.
-
   -v, --verbose         enable verbose output
 
   -D <string>, --drop-info-fields <string>
@@ -122,11 +128,12 @@ liftoverSV lifts over a SV VCF file from one QUERY reference build to a TARGET r
    (genomic coordinates and sequences are lifted)
 
 * Lift over INFO/SVLEN, INFO/SVSIZE:
-   - Lifts over for deletion, duplication and inversion (SVLEN_lifted = End_lifted - Start_lifted)
-   - Keep the same SVLEN/SVSIZE for insertion (the number of the inserted bases remains the same)
-   - Set SVLEN/SVSIZE to "." for SV type not equal to DEL, DUP, INV or INS (TRA, CPX...)
+   - deletion, duplication and inversion: SVLEN_lifted = End_lifted - Start_lifted
+   - insertion: Keep the same SVLEN/SVSIZE (the number of the inserted bases remains the same)
+   - other SV type (TRA, CPX...): set SVLEN/SVSIZE to "."
 
 * Check/Update INFO/CIPOS and INFO/CIEND, so that with the target reference build:
+  (confidence interval around POS/END)<br>
    - POS-CIPOS >= 1 (VCF coordinates are 1-based)</br>
    - END+CIEND <= chromosome length
 
@@ -139,7 +146,7 @@ liftoverSV lifts over a SV VCF file from one QUERY reference build to a TARGET r
       => useful for reproducibility and traceability
     - Create the "liftoverSV_version" field</br>
       e.g. `##liftoverSV_version=1.0.0
-    - Update the "INFO", "FORMAT" and "FILTER" fields if one value is missing.</br>
+    - Update the "##INFO", "##FORMAT" and "##FILTER" lines if one value is missing.</br>
       Possible rescues in the \"$liftoverSV/share/doc/liftoverSV/vcf_header_lines.txt"\ file.</br>
       Else, as the format (Number, String) is not known, "Number=." and "Type=String" values are used by default:</br>
       e.g. `##FORMAT=<ID=XXX,Number=.,Type=String,Description="XXX">`</br>
@@ -219,7 +226,7 @@ Running them after installation or before submitting changes is recommended to v
 
 
 ## SV representation in VCF files
-cf https://samtools.github.io/hts-specs/VCFv4.4.pdf</br>
+cf https://samtools.github.io/hts-specs/VCFv4.5.pdf</br>
 See section 3: "INFO keys used for structural variants"
 
 

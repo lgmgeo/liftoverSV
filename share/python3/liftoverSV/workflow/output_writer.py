@@ -54,10 +54,10 @@ def add_new_header_lines(S_new_INFO, S_new_FORMAT, S_new_FILTER, S_lifted_contig
     """
 
     print(f"[{time.strftime('%H:%M:%S')}] Writing header in the {g_liftoverSV['output_file']}")
-    print(f"           => Updating (if needed) the INFO, FORMAT and FILTER header lines")
-    print(f"           => Updating (if needed) the contigs header lines")
-    print(f"           => Adding information about the use of liftoverSV")
-    print(f"           => Adding/Updating the reference header line")
+    print("           => Updating (if needed) the INFO, FORMAT and FILTER header lines")
+    print("           => Updating (if needed) the contigs header lines")
+    print("           => Adding information about the use of liftoverSV")
+    print("           => Adding/Updating the reference header line")
 
     # Memorize header info from the "vcf_header_lines.txt" file
     ###########################################################

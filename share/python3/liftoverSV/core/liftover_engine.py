@@ -31,8 +31,8 @@ class LiftoverEngine:
     Engine to lift over VCF variants from a query genome to a target genome.
 
     Uses ChainLifter for coordinate conversion and FastaExtractor
-    for sequence extraction. Handles drop cases and outputs
-    mapped and unmapped variants.
+    for sequence extraction. Handles drop cases. Outputs mapped
+    and unmapped variants.
     """
 
     def __init__(self, chain: ChainLifter, extractor: FastaExtractor, percent: int):
