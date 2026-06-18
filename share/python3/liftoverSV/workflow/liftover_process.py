@@ -22,7 +22,7 @@ import sys
 import re
 import time
 import tempfile
-from io_tools.file_utils import open_any_text_file, print_flush as print
+from io_tools.file_utils import open_any_text_file, print_flush as print, drop_info_fields, remove_tags_with_genomic_coordinates
 from io_tools.batch_writer import BatchWriter
 from io_tools.chain_lifter import ChainLifter
 from io_tools.fasta_extractor import FastaExtractor
@@ -195,6 +195,20 @@ def write_the_lifted_vcf(g_liftoverSV):
     n_unmapped = 0
     case_counts = {f"case{i}": 0 for i in range(1, 6)}
     
+    new_line = ""
+    
+    if g_liftoverSV["remove_coordinates"]:
+        tags=remove_tags_with_genomic_coordinates(input_file)
+    else:
+        tags=""
+        
+    if g_liftoverSV["drop_info_fields"] is not None:
+        if tags !="":
+            g_liftoverSV["drop_info_fields"]+="," + tags
+    else:
+        g_liftoverSV["drop_info_fields"]=tags
+
+    
     with open_any_text_file(input_file) as f:
         for vcf_line_number, line in enumerate(f, 1):
 
@@ -202,7 +216,8 @@ def write_the_lifted_vcf(g_liftoverSV):
                 # Updade S_header_INFO, S_header_FORMAT and S_header_FILTER
                 S_header_INFO, S_header_FORMAT, S_header_FILTER = extract_header_ids(line, S_header_INFO, S_header_FORMAT, S_header_FILTER)
             else:
-                chunk.append((vcf_line_number, line))
+                new_line = drop_info_fields(line, g_liftoverSV)
+                chunk.append((vcf_line_number, new_line))
                 if len(chunk) >= g_liftoverSV["chunk_size"]:
                     L_chunks.append(chunk)
                     chunk = []                  

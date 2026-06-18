@@ -22,6 +22,7 @@ import gzip
 import functools
 import builtins
 import gzip
+import time
 import re
 from itertools import islice
 
@@ -228,4 +229,70 @@ def open_any_text_file(path):
         return open(path, "rt")        # plain-text file
 
 
+def drop_info_fields(line, g_liftoverSV):
+    """
+    Drop the fields from a line et return it
+    """
+            
+    #Liste qui va répertorier les fields à supprimer
+    if g_liftoverSV['drop_info_fields']==None:
+        return line
+        
+    fields_list = set(g_liftoverSV["drop_info_fields"].split(","))
+    
+    #Séparation des champs de la ligne str
+    fields = line.split("\t")
+    info  = fields[7].split(";")
+    new_info = []
+    
+    #Boucle qui parse les variants et les fields à supprimer
+    for i in range(len(info)):
+        key=info[i].split("=")[0]    
+        if key not in fields_list:
+            new_info.append(info[i])
+    
+    #Réécriture du champ INFO        
+    fields[7]=";".join(new_info)
+    return "\t".join(fields)
 
+
+def check_header_field(line, g_liftoverSV):
+    """Check if the header line contains the fields to drop and return TRUE or FALSE"""
+    
+    if g_liftoverSV['drop_info_fields']==None:
+        return False
+    fields = g_liftoverSV["drop_info_fields"].split(",")
+    start=""
+    for field in fields:
+        start=f"##INFO=<ID={field}"
+        if line.startswith(start):
+            return True
+                
+    return False
+
+
+def remove_tags_with_genomic_coordinates(input_file):
+    """
+    Remove INFO fields containing genomic coordinates from both SV records and VCF header entries
+    """
+    
+    S_tag = set()
+    with open_any_text_file(input_file) as f:
+        for vcf_line_number, line in enumerate(f, 1):
+            if not line.startswith("#"):
+                #Séparation des champs de la ligne str
+                L_fields = line.split("\t")
+                L_info  = L_fields[7].split(";")
+                
+                #Boucle qui parse les variants et les fields à supprimer
+                for i in range(len(L_info)):
+                    if "=" in L_info[i]:
+                        key_val = L_info[i].split("=")
+                        if key_val[0] not in ("END","SVTYPE","SVLEN","CIPOS","CIEND","IMPRECISE") and key_val[0] not in S_tag:
+                            match = re.search(r'(1[0-9]|2[0-2]|[1-9]|X|Y|M|MT):(\d+)', key_val[1])
+                            if match:
+                                S_tag.add(key_val[0])
+    if S_tag!=set():                    
+        print(f"[{time.strftime('%H:%M:%S')}]", "INFO fields containing genomic coordinates removed:", ",".join(S_tag))  
+              
+    return ",".join(S_tag)

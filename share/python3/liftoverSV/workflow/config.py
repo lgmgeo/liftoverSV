@@ -169,7 +169,7 @@ def valid_tool_path(tool_path, tool_name):
             print(f"\nError: {tool_name} does not seem valid ('{tool_path}').")
             sys.exit(2)
 
-    except Exception:
+    except Exception as e:
         print(f"\nError: Cannot execute {tool_name} ('{tool_path}'). {str(e)}")
         sys.exit(2)
 
@@ -358,6 +358,19 @@ default value: 0.05"""
         "-v", "--verbose",
         action="store_true",
         help="enable verbose output"
+    )
+    
+    group_behavior.add_argument(
+        "-D", "--drop-info-fields", dest="drop_info_fields",
+        type=str,
+        help="Comma-separated list of INFO fields to remove from the output VCF"
+    )
+    
+    group_behavior.add_argument(
+        "-R", "--remove-coordinates",dest="remove_coordinates",
+        action="store_true",
+        help="Remove INFO fields containing genomic coordinates from both SV records and VCF header entries",
+        default=False
     )
 
     # Parsing of the arguments

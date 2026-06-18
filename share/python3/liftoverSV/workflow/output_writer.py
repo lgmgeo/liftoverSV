@@ -21,7 +21,7 @@ import os
 import sys
 import gzip
 import time
-from io_tools.file_utils import open_any_text_file, natural_sort_key, print_flush as print
+from io_tools.file_utils import open_any_text_file, natural_sort_key, print_flush as print, check_header_field
 from io_tools.vcf_sorter import VcfSorter
 
 # Meta-information lines in VCF:
@@ -145,6 +145,8 @@ def add_new_header_lines(S_new_INFO, S_new_FORMAT, S_new_FILTER, S_lifted_contig
                 elif line.startswith("##FILTER=<ID"):
                     L_FILTER.append(line)
                 elif line.startswith("##INFO=<ID"):
+                    if check_header_field(line, g_liftoverSV):
+                        continue
                     L_INFO.append(line)
                 elif line.startswith("##FORMAT=<ID"):
                     L_FORMAT.append(line)
