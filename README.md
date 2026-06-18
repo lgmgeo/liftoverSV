@@ -96,8 +96,8 @@ Behavior:
                         variation in length authorized for a lifted SV (e.g. difference max between both SVLENs < 5%)
                         default value: 0.05
   -T <Dir>, --tmp-dir <Dir>
-                        Directory where temporary files will be created.
-                        If not provided, the system default temporary directory is used.
+                        directory where temporary files will be created.
+                        if not provided, the system default temporary directory is used.
   -v, --verbose         enable verbose output
 
   -D <string>, --drop-info-fields <string>

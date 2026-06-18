@@ -2,7 +2,8 @@
 *~
 
 # Personal README
-README.vero
+README.vero.tmp
+tests/liftoverSV/README.vero
 
 # Personal test
 test_00*
